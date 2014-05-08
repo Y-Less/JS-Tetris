@@ -1,9 +1,97 @@
 <html>
 	<head>
 		<title>Tetris, by Y_Less.</title>
+        <style type="text/css">
+            
+            body, html
+            {
+                border: 0;
+                margin: 0;
+                padding: 0;
+                overflow: none;
+            }
+            
+            body
+            {
+                width: 100%;
+                height: 100%;
+            }
+            
+            canvas, body
+            {
+                display: block;
+                position: absolute;
+                visibility: shown;
+            }
+            
+        </style>
 	</head>
 	<body>
-		<script type="text/javascript" src="Tetris.js"></script>
+        <!-- <canvas id="tetrisSurface"></canvas> -->
+		<!-- <script type="text/javascript" src="Tetris.js"></script> -->
+		<script type="text/javascript" src="View.js"></script>
+		<script type="text/javascript" src="Background/View.js"></script>
+		<script type="text/javascript" src="Menu/View.js"></script>
+        <script type="text/javascript">
+        
+        window.requestAnimFrame = (function ()
+            {
+                return window.requestAnimationFrame    ||
+                    window.webkitRequestAnimationFrame ||
+                    window.mozRequestAnimationFrame    ||
+                    function (callback)
+                    {
+                        window.setTimeout(callback, 1000 / 60);
+                    };
+            })();
+        
+        window.onload = function()
+        {
+            /*var GLOBAL_CANVAS  = document.getElementById('tetrisSurface');
+            var GLOBAL_CONTEXT = GLOBAL_CANVAS.getContext('2d');*/
+            
+            function ResizeCanvas()
+            {
+                Background.Resize();
+            }
+            
+            window.addEventListener('resize', ResizeCanvas, false);
+            //ResizeCanvas();
+            
+            Background.Init();
+            Background.Show();
+            
+            (function ()
+            {
+                var _lastRender = Date.now();
+                var _lastUpdate = Date.now();
+                
+                function AnimLoop()
+                {
+                    requestAnimFrame(AnimLoop);
+                    //render();
+                    var last = _lastRender;
+                    _lastRender = Date.now();
+                    Background.RunRender(_lastRender - last);
+                }
+                
+                function UpdateLoop()
+                {
+                    //requestAnimFrame(animloop);
+                    //render();
+                    var last = _lastUpdate;
+                    _lastUpdate = Date.now();
+                    Background.Update(_lastUpdate - last);
+                }
+                
+                AnimLoop();
+                window.setInterval(UpdateLoop, 50);
+            })();
+            Menu.Show();
+        };
+        
+        </script>
 	</body>
 </html>
+
 

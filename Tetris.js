@@ -82,9 +82,9 @@ console.log(Settings.GetStartSpeed());
 // Track the current game state.
 function StateHandler(_initial)
 {
+    var _stack = [];
 	var _states = [];
 	var _cur = '';
-	//var _that = this;
 	
 	function DoTransition(to)
 	{
@@ -93,6 +93,32 @@ function StateHandler(_initial)
 			_states[_cur].Exit(to);
 			_states[to].Entry(_cur);
 			_cur = to;
+		}
+	}
+    
+    /*
+        The state stack is used for minor states that are called from a great
+        number of places and want to return to their call point, while leaving
+        the call point alive in the background.
+    */
+	
+	function DoPush(to)
+	{
+		if (_states[to] && _cur)
+		{
+            _stack.push(_cur);
+			_states[to].Entry(_cur);
+			_cur = to;
+		}
+	}
+	
+	function DoPop()
+	{
+		if (_stack[0] && _cur)
+		{
+            var to = _stack.pop();
+			_states[_cur].Exit(to);
+            _cur = to;
 		}
 	}
 	
@@ -106,6 +132,8 @@ function StateHandler(_initial)
 		{
 			_states[name] = obj;
 			obj.Transition = function (to) { if (_cur == name) DoTransition(to); };
+			obj.Push = function (to) { if (_cur == name) DoPush(to); };
+			obj.Pop = function () { if (_cur == name) DoPop(); };
 			if (_cur == '' && _initial == name)
 			{
 				obj.Entry('');
@@ -115,6 +143,8 @@ function StateHandler(_initial)
 	};
 	
 	this.Transition = DoTransition;
+	this.Push = DoPush;
+	this.Pop = DoPop;
 	
 	this.Update = function (time)
 	{
