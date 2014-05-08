@@ -29,6 +29,12 @@
 	<body>
         <!-- <canvas id="tetrisSurface"></canvas> -->
 		<!-- <script type="text/javascript" src="Tetris.js"></script> -->
+		<script type="text/javascript">
+        
+        var BLOCK_SIZE = 30;
+        
+        </script>
+		<script type="text/javascript" src="Utils.js"></script>
 		<script type="text/javascript" src="View.js"></script>
 		<script type="text/javascript" src="Background/View.js"></script>
 		<script type="text/javascript" src="Menu/View.js"></script>
@@ -60,6 +66,7 @@
             
             Background.Init();
             Background.Show();
+            Menu.Show();
             
             (function ()
             {
@@ -69,16 +76,13 @@
                 function AnimLoop()
                 {
                     requestAnimFrame(AnimLoop);
-                    //render();
                     var last = _lastRender;
                     _lastRender = Date.now();
-                    Background.RunRender(_lastRender - last);
+                    Background._Render(_lastRender - last);
                 }
                 
                 function UpdateLoop()
                 {
-                    //requestAnimFrame(animloop);
-                    //render();
                     var last = _lastUpdate;
                     _lastUpdate = Date.now();
                     Background.Update(_lastUpdate - last);
@@ -87,7 +91,11 @@
                 AnimLoop();
                 window.setInterval(UpdateLoop, 50);
             })();
-            Menu.Show();
+            
+            //Background._Render(100);
+            
+            //window.setInterval(function () { Background._Render(100); }, 1000);
+            
         };
         
         </script>
