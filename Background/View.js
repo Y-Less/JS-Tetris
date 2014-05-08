@@ -3,32 +3,12 @@ var Background = new View(0, function ()
         // All the clouds we currently have.
         var _clouds = []; // = [1, 2, 3, 4];
         
-        function DrawCloud(ctx)
-        {
-            ctx.beginPath();
-            ctx.moveTo(0, 85);
-            
-            ctx.lineTo(150, 85);
-            
-            ctx.quadraticCurveTo(130, 35, 110, 65);
-            ctx.quadraticCurveTo(75, 0, 40, 65);
-            ctx.quadraticCurveTo(20, 35, 0, 85);
-            
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = 'white';
-            ctx.stroke();
-            ctx.fillStyle="white";
-            ctx.fill();
-        }
-        
-        var _canvas = View.CreateCanvas(150, 85);
-        var _cloud  = View.GetContext(_canvas);
-        DrawCloud(_cloud);
-        
+        // Definition of the data underlying a cloud.
+        // MODEL.
         function Cloud()
         {
-            this.v = Math.random() + 1.0;
-            var s = this.v - 0.5;
+            this.v = Math.random() * 2.0;
+            var s = this.v; // - 0.5;
             this.w = 150 * s;
             this.h = 85 * s;
             this.v /= 10.0;
@@ -36,15 +16,42 @@ var Background = new View(0, function ()
             this.y = (Math.random() * 1000 - 75.5) | 0;
         }
         
+        // VIEW.
+        (function ()
+        {
+            function PreRenderCloud(canvas)
+            {
+                var ctx = View.GetContext(canvas)
+                ctx.beginPath();
+                ctx.moveTo(0, 85);
+                
+                ctx.lineTo(150, 85);
+                
+                ctx.quadraticCurveTo(130, 35, 110, 65);
+                ctx.quadraticCurveTo(75, 0, 40, 65);
+                ctx.quadraticCurveTo(20, 35, 0, 85);
+                
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = 'white';
+                ctx.stroke();
+                ctx.fillStyle="white";
+                ctx.fill();
+            }
+            
+            var _cloud = View.CreateCanvas(150, 85);
+            PreRenderCloud(_cloud);
+            
+            Cloud.prototype.Draw = function (ctx, mx, my)
+            {
+                if (this.x < mx && this.y < my)
+                    ctx.drawImage(_cloud, (0.5 + this.x) | 0, this.y, this.w, this.h);
+            };
+        })();
+        
+        // CONTROLLER.
         Cloud.prototype.Move = function (time)
         {
             return (this.x += time * this.v) <= 2000.0;
-        };
-        
-        Cloud.prototype.Draw = function (ctx, mx, my)
-        {
-            if (this.x < mx && this.y < my)
-                ctx.drawImage(_canvas, (0.5 + this.x) | 0, this.y, this.w, this.h);
         };
         
         this.Render = function (time, ctx)
