@@ -1,14 +1,16 @@
+// var Background = {}
+// CreateView(Background, 0, function ()
 var Background = new View(0, function ()
     {
         // All the clouds we currently have.
-        var _clouds = []; // = [1, 2, 3, 4];
+        var _clouds = [];
         
         // Definition of the data underlying a cloud.
         // MODEL.
         function Cloud()
         {
             this.v = Math.random() * 2.0;
-            var s = this.v; // - 0.5;
+            var s = this.v;
             this.w = 150 * s;
             this.h = 85 * s;
             this.v /= 10.0;
@@ -85,13 +87,10 @@ var Background = new View(0, function ()
                 var c = new Cloud();
                 if (c.Move(xx))
                 {
-                    //var v = Math.random() + 1.0;
-                    //var c = {x: -150 + v * xx, y: (Math.random() * 1000 - 75.5) | 0, v: v, };
                     c.Draw(ctx, w, h);
                     clouds.push(c);
                 }
                 _lastAdded -= 500;
-                //ctx.drawImage(_canvas, (0.5 + c.x) | 0, c.y);
             }
             
             _clouds = clouds;
@@ -115,9 +114,6 @@ var Background = new View(0, function ()
                 {
                     _clouds.push(c);
                 }
-                //var v = Math.random() + 1.0;
-                //_clouds.push({x: -150 + (i * 100 * v), y: (Math.random() * 1000 - 75.5) | 0, v: v, });
-                //this.Update(1000);
             }
         };
     });

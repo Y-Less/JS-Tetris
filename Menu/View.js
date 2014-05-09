@@ -1,44 +1,44 @@
-var Menu = new View(Background, function ()
+// CreateView(Menu, Background, function ()
+Menu.View = new View(Background, function ()
     {
         function DrawMenu(ctx)
         {
-            //var cl = BLOCK_COLOURS.length;
-            function RC()
-            {
-                return BLOCK_COLOURS[0];
-            }
-            
-            /*ctx.beginPath();
-            ctx.moveTo(0, 85);
-            
-            ctx.lineTo(150, 85);
-            
-            ctx.quadraticCurveTo(130, 35, 110, 65);
-            ctx.quadraticCurveTo(75, 0, 40, 65);
-            ctx.quadraticCurveTo(20, 35, 0, 85);
-            
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = 'white';
-            ctx.stroke();
-            ctx.fillStyle="white";
-            ctx.fill();*/
             ctx.fillStyle = 'white';
-            // ctx.fillRect(BLOCK_SIZE, BLOCK_SIZE, ctx.width - BLOCK_SIZE - BLOCK_SIZE, ctx.height - BLOCK_SIZE - BLOCK_SIZE);
             ctx.fillRect(0, 0, ctx.width, ctx.height);
             
-            
+            var bc = BLOCK_COLOURS[0];
             
             for (var i = 0, w = ctx.width, y = ctx.height - BLOCK_SIZE; i != w; i += BLOCK_SIZE)
             {
-                DrawBlock(ctx, i, 0, RC());
-                DrawBlock(ctx, i, y, RC());
+                DrawBlock(ctx, i, 0, bc);
+                DrawBlock(ctx, i, y, bc);
             }
             
             for (var i = BLOCK_SIZE, h = ctx.height - BLOCK_SIZE, x = ctx.width - BLOCK_SIZE; i != h; i += BLOCK_SIZE)
             {
-                DrawBlock(ctx, 0, i, RC());
-                DrawBlock(ctx, x, i, RC());
+                DrawBlock(ctx, 0, i, bc);
+                DrawBlock(ctx, x, i, bc);
             }
+            
+            /*
+            
+              ##### ##### ##### ###  #  ### 
+                #   #       #   #  # # #    
+                #   ###     #   ###  #  ### 
+                #   #       #   #  # #     #
+                #   #####   #   #  # #  ### 
+            
+            */
+            
+            /*
+            
+              ### ### ### ##  #  ## 
+               #  #    #  # # # #   
+               #  ##   #  ##  #  # 
+               #  #    #  # # #   #
+               #  ###  #  # # # ## 
+            
+            */
             
             var TETRIS = [
                     "  111 222 333 44  5  66  ",
@@ -57,24 +57,6 @@ var Menu = new View(Background, function ()
                 }
             }
             
-            /*
-            
-            ##### ##### ##### ###  #  ### 
-              #   #       #   #  # # #    
-              #   ###     #   ###  #  ### 
-              #   #       #   #  # #     #
-              #   #####   #   #  # #  ### 
-            
-            */
-            
-            /*
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, ctx.width, BLOCK_SIZE);
-            ctx.fillRect(0, 0, BLOCK_SIZE, ctx.height);
-            ctx.fillRect(ctx.width - BLOCK_SIZE, 0, BLOCK_SIZE, ctx.height);
-            ctx.fillRect(0, ctx.height - BLOCK_SIZE, ctx.width, BLOCK_SIZE);
-            
-            */
             ctx.fillStyle = 'red';
             ctx.fillRect(ctx.width / 2 - 50, ctx.height / 2 - 15, 100, 30);
             
@@ -86,25 +68,118 @@ var Menu = new View(Background, function ()
         }
         
         this.CreateView(BLOCK_SIZE * 25, BLOCK_SIZE * 20);
-        //var _menu   = View.GetContext(_canvas);
-        //DrawMenu(_menu);
         
         var _drawn = false;
+        var _hidden = false;
+        var _changed = false;
         
         this.Render = function (time, ctx)
         {
             if (!_drawn)
             {
-                DrawMenu(ctx);
+                if (_hidden)
+                {
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(ctx.width / 2 - 50, ctx.height / 2 - 15, 100, 30);
+                    
+                    ctx.fillStyle = 'blue';
+                    ctx.font = '20pt Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('SHOW', ctx.width / 2, ctx.height / 2, 100);
+                }
+                else
+                {
+                    DrawMenu(ctx);
+                }
                 _drawn = true;
+                _changed = false;
                 this.Swap();
             }
         };
+        
+        var _moving = false;
+        var _sx = 0;
+        var _sy = 0;
+        var _ox = 0;
+        var _oy = 0;
+        
+        function FrameMove(event)
+        {
+            if (_moving)
+            {
+               this.Move(_ox + event.pageX - _sx, _oy + event.pageY - _sy);
+            }
+        }
+        
+        function FrameDown(event)
+        {
+            if (!_hidden)
+            {
+                this.AddEvent('FrameMove', [this, FrameMove]);
+                _moving = true;
+                _sx = event.pageX;
+                _sy = event.pageY;
+                console.log('down: ' + _sx + ', ' + _sy);
+            }
+        }
+        
+        function FrameUp(event)
+        {
+            if (_moving)
+            {
+                _moving = false;
+                this.RemoveEvent('FrameMove');
+                console.log('up');
+                //this.View.UnregisterAction('FrameMove', 'mousemove');
+                _ox += event.pageX - _sx;
+                _oy += event.pageY - _sy;
+            }
+        }
+        
+        function Hide(event)
+        {
+            if (!_changed && !_hidden)
+            {
+                _drawn = false;
+                _hidden = true;
+                _changed = true;
+            }
+        }
+        
+        function Show(event)
+        {
+            if (!_changed && _hidden)
+            {
+                _drawn = false;
+                _hidden = false;
+                _changed = true;
+            }
+        }
+        
+        this.RegisterEvents({
+                'FrameDown': [this, FrameDown],
+                'FrameUp'  : [this, FrameUp],
+                'Hide'     : [this, Hide],
+                'Show'     : [this, Show],
+                //'FrameMove': FrameMove,
+            });
+        
+        this.RegisterZone('FrameDown', 'mousedown', 0, 0, BLOCK_SIZE * 25, BLOCK_SIZE);
+        this.RegisterZone('FrameDown', 'mousedown', 0, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE * 18);
+        this.RegisterZone('FrameDown', 'mousedown', BLOCK_SIZE * 24, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE * 18);
+        this.RegisterZone('FrameDown', 'mousedown', 0, BLOCK_SIZE * 19, BLOCK_SIZE * 25, BLOCK_SIZE);
+        
+        this.RegisterAction('FrameUp', 'mouseup');
+        this.RegisterAction('FrameMove', 'mousemove');
+        
+        
+        
+        this.RegisterZone('Hide', 'click', (BLOCK_SIZE * 25 - 100) / 2, (BLOCK_SIZE * 20 - 30) / 2, 100, 30);
+        this.RegisterZone('Show', 'click', (BLOCK_SIZE * 25 - 100) / 2, (BLOCK_SIZE * 20 - 30) / 2, 100, 30);
+        
+        
+        
+        
     });
-
-
-
-
-
-
 

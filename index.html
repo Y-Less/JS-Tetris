@@ -8,7 +8,7 @@
                 border: 0;
                 margin: 0;
                 padding: 0;
-                overflow: none;
+                overflow: hidden;
             }
             
             body
@@ -36,9 +36,23 @@
         </script>
 		<script type="text/javascript" src="Utils.js"></script>
 		<script type="text/javascript" src="View.js"></script>
+		<script type="text/javascript" src="Controller.js"></script>
 		<script type="text/javascript" src="Background/View.js"></script>
+		<script type="text/javascript" src="Menu/Controller.js"></script>
 		<script type="text/javascript" src="Menu/View.js"></script>
+		<!-- <script type="text/javascript" src="Menu/View.js"></script> -->
         <script type="text/javascript">
+        
+        var Test = function (y)
+        {
+            var _x = y;
+            Object.defineProperty(this, "x", {
+                    get: function () { return _x; },
+                    set: ReadOnly('x'),
+                });
+            return this;
+        }
+        var T2 = new Test(88);
         
         window.requestAnimFrame = (function ()
             {
@@ -66,7 +80,7 @@
             
             Background.Init();
             Background.Show();
-            Menu.Show();
+            Menu.View.Show();
             
             (function ()
             {
