@@ -1,6 +1,6 @@
 // var Background = {}
 // CreateView(Background, 0, function ()
-var Background = new View(0, function ()
+Background.View = new View(0, function ()
     {
         // All the clouds we currently have.
         var _clouds = [];
@@ -56,6 +56,9 @@ var Background = new View(0, function ()
             return (this.x += time * this.v) <= 2000.0;
         };
         
+        var _hint = false;
+        var _hintPulse = 1000;
+        
         this.Render = function (time, ctx)
         {
             ctx.fillStyle = 'skyblue';
@@ -95,14 +98,29 @@ var Background = new View(0, function ()
             
             _clouds = clouds;
             
+            if (_hint)
+            {
+                // console.log(_hintPulse);
+                // console.log(time);
+                _hintPulse = (_hintPulse + time) % 2000;
+                // console.log(_hintPulse);
+                // var p = Math.abs(_hintPulse / 1000 - 1);
+                ctx.font = 'bold 22pt Arial';
+                // p = 'rgba(0, 0, 0, ' + p + ')';
+                ctx.fillStyle = 'rgba(0, 0, 0, ' + Math.abs(_hintPulse / 1000 - 1) + ')';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Press any key to continue...', ctx.width / 2, ctx.height - 100);
+            }
+            
             this.Swap();
         };
         
         var _lastAdded = 0;
         
-        this.Update = function (time)
-        {
-        };
+        // this.Update = function (time)
+        // {
+        // };
         
         this.Init = function ()
         {
@@ -116,6 +134,14 @@ var Background = new View(0, function ()
                 }
             }
         };
+        
+        this.Hint = function (t)
+        {
+            _hint = t;
+            _hintPulse = 1000;
+        };
+        
+        this.RegisterZone('Continue', 'click', 0, 0, 5000, 2000);
     });
 
 

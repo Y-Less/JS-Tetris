@@ -11,6 +11,9 @@ function View()
     var _swap = false;
     var _z = 10;
     
+    var _domContainer = document.createElement('div');
+    _domContainer.className = 'canvas_container';
+    
     var _fcanvas = View.CreateCanvas(0, 0);
     var _fctx = View.GetContext(_fcanvas);
     _fcanvas.style.display = 'none';
@@ -23,6 +26,7 @@ function View()
     var _top  = 0;
     
     _fcanvas.style.zIndex = _bcanvas.style.zIndex = _z;
+    _domContainer.style.zIndex = _z + 1;
     
     function SwapBuffers()
     {
@@ -46,7 +50,7 @@ function View()
         _swap = false;
     }
     
-    var _domHandlers  = {};
+    var _domHandlers  = {}; //{'click': []};
     var _attached = false;
     
     function ProcessDOM(event)
@@ -61,25 +65,73 @@ function View()
                 t[i].Try(x, y, event);
             }
         }
+        return false;
     }
-
+    
+    // "onclick" events don't work very well because we are constantly swapping
+    // the active DOM element.  Thus, the user may "mousedown" on one, and
+    // "mouseup" on the other, so not register a "click" event.  We could add a
+    // parent DOM element that is clicked.  That is probably the best solution,
+    // this is the quickest.
+    /*var _down = false;
+    
+    // http://stackoverflow.com/questions/12593035/cloning-javascript-event-object
+    function CloneEventObj(eventObj, overrideObj)
+    {
+       if (!overrideObj) overrideObj = {};
+       function EventCloneFactory(overProps)
+       {
+           for (var x in overProps)
+           {
+               this[x] = overProps[x];
+           }
+        }
+        EventCloneFactory.prototype = eventObj;
+        return new EventCloneFactory(overrideObj);
+    }
+    
+    function OnDown(event)
+    {
+        _down = true;
+    }
+    
+    function OnUp(event)
+    {
+        if (_down)
+        {
+            var e = CloneEventObj(event, { type: 'click', });
+            //e['type'] = 'click';
+            ProcessDOM(e);
+            //event.type = 'mouseup';
+            _down = false;
+        }
+    }*/
+    
     this.Show = function ()
     {
         // Add BOTH buffers to the page, so that they can be swapped.
         document.body.appendChild(_fcanvas);
         document.body.appendChild(_bcanvas);
+        document.body.appendChild(_domContainer);
         this.Resize();
         // Add the handlers that are pending.
         _attached = true;
+        //_bcanvas.addEventListener('mousedown', OnDown, false);
+        //_fcanvas.addEventListener('mousedown', OnDown, false);
+        //_bcanvas.addEventListener('mouseup', OnUp, false);
+        //_fcanvas.addEventListener('mouseup', OnUp, false);
         for (var on in _domHandlers)
         {
-            _bcanvas.addEventListener(on, ProcessDOM, false);
-            _fcanvas.addEventListener(on, ProcessDOM, false);
+            //if (on !== 'click')
+            {
+                _domContainer.addEventListener(on, ProcessDOM, false);
+            }
         }
         this.Show = function ()
         {
             if (!_shown)
             {
+                _domContainer.style.display = 'block';
                 _fcanvas.style.display = 'block';
                 _shown = true;
             }
@@ -89,6 +141,7 @@ function View()
     
     this.Hide = function ()
     {
+        _domContainer.style.display = 'none';
         _fcanvas.style.display = 'none';
         _shown = false;
     };
@@ -131,10 +184,11 @@ function View()
     {
         this.CreateView = function (w, h)
         {
-            _bctx.width  = _fctx.width  = _bcanvas.width  = _fcanvas.width  = w;
-            _bctx.height = _fctx.height = _bcanvas.height = _fcanvas.height = h;
+            _bctx.width  = _fctx.width  = _bcanvas.width  = _fcanvas.width  = _domContainer.style.width  = w;
+            _bctx.height = _fctx.height = _bcanvas.height = _fcanvas.height = _domContainer.style.height = h;
             
             _fcanvas.style.zIndex = _bcanvas.style.zIndex = _z = _parent.AddChild(this);
+            _domContainer.style.zIndex = _z + 1;
         };
         
         this.Move = function (x, y)
@@ -145,8 +199,8 @@ function View()
         this.UpdatePos = function (parent, ox, oy)
         {
             var rect = parent.getBoundingClientRect();
-            _left = _fcanvas.style.left = _bcanvas.style.left = ox + rect.left + (parent.width  - _bcanvas.width ) / 2;
-            _top  = _fcanvas.style.top  = _bcanvas.style.top  = oy + rect.top  + (parent.height - _bcanvas.height) / 2;
+            _domContainer.style.left = _left = _fcanvas.style.left = _bcanvas.style.left = ox + rect.left + (parent.width  - _bcanvas.width ) / 2;
+            _domContainer.style.top  = _top  = _fcanvas.style.top  = _bcanvas.style.top  = oy + rect.top  + (parent.height - _bcanvas.height) / 2;
         }
         
         this.Resize = ResizeRecurse;
@@ -157,14 +211,15 @@ function View()
         _fcanvas.style.left   = _bcanvas.style.left   = 0;
         _fcanvas.style.top    = _bcanvas.style.top    = 0;
         _fcanvas.style.zIndex = _bcanvas.style.zIndex = _z = 10;
+        _domContainer.style.zIndex = _z + 1;
         //document.body.appendChild(_view);
         
         this.Resize = function ()
         {
             var mw = window.innerWidth;
             var mh = window.innerHeight;
-            _bctx.width  = _fctx.width  = _bcanvas.width  = _fcanvas.width  = mw;
-            _bctx.height = _fctx.height = _bcanvas.height = _fcanvas.height = mh;
+            _domContainer.style.width  = _bctx.width  = _fctx.width  = _bcanvas.width  = _fcanvas.width  = mw;
+            _domContainer.style.height = _bctx.height = _fctx.height = _bcanvas.height = _fcanvas.height = mh;
             ResizeRecurse(mw, mh);
         };
     }
@@ -248,8 +303,7 @@ function View()
     
     if (!document.addEventListener)
     {
-        _bcanvas.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
-        _fcanvas.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
+        _domContainer.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
     }
     
     this.RegisterZone = function (name, on, x, y, w, h)
@@ -258,8 +312,7 @@ function View()
         {
             if (_attached)
             {
-                _bcanvas.addEventListener(on, ProcessDOM, false);
-                _fcanvas.addEventListener(on, ProcessDOM, false);
+                _domContainer.addEventListener(on, ProcessDOM, false);
             }
             _domHandlers[on] = [];
         }
@@ -349,18 +402,16 @@ function View()
             var t = _childActions[event.type];
             for (var i in t)
             {
-                if (t[i]._ProcessAction(event)) return true;
+                if (t[i]._ProcessAction(event)) return false;
                 // if (ProcessAction.call(t[i], event)) return true;
             }
             if (_enabled)
             {
                 t = _domActions[event.type];
-                var ret = false;
                 for (var i in t)
                 {
-                    if (t[i].Try(event)) ret = true;
+                    t[i].Try(event);
                 }
-                return ret;
             }
             return false;
         }

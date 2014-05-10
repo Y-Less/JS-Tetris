@@ -19,6 +19,11 @@ var BLOCK_COLOURS = [
         {r: 100, g: 100, b: 100},
     ];
 
+var BLOCK_RGB = BLOCK_COLOURS.map(function (colour)
+    {
+        return 'rgb(' + colour.r + ', ' + colour.g + ', ' + colour.b + ')';
+    });
+
 var BLOCK_SHAPES = {
         O : "     00  00     ",
         I : "  1   1   1   1 ",
@@ -90,4 +95,14 @@ function ID(i)
 {
     return i;
 }
+
+
+
+
+
+
+
+
+
+
 

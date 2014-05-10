@@ -3,7 +3,7 @@
 		<title>Tetris, by Y_Less.</title>
         <style type="text/css">
             
-            body, html
+            body, html, canvas, .canvas_container
             {
                 border: 0;
                 margin: 0;
@@ -17,11 +17,19 @@
                 height: 100%;
             }
             
-            canvas, body
+            canvas, .canvas_container
             {
                 display: block;
                 position: absolute;
                 visibility: shown;
+            }
+            
+            *
+            {
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select:none;
+                user-select:none;
             }
             
         </style>
@@ -29,14 +37,33 @@
 	<body>
         <!-- <canvas id="tetrisSurface"></canvas> -->
 		<!-- <script type="text/javascript" src="Tetris.js"></script> -->
+		<script type="text/javascript" src="Utils.js"></script>
+		<script type="text/javascript" src="States.js"></script>
+		<script type="text/javascript" src="View.js"></script>
+		<script type="text/javascript" src="Controller.js"></script>
 		<script type="text/javascript">
         
         var BLOCK_SIZE = 30;
         
+        var STATE_SPLASH   = 'SplashScreen';
+        var STATE_CONTINUE = 'ContinueScreen';
+        var STATE_MENU     = 'Menu';
+        var STATE_CREDITS  = 'Credits';
+        var STATE_OPTIONS  = 'Options';
+        var STATE_SCORES   = 'HighScores';
+        var STATE_NEW      = 'NewGame';
+        var STATE_GAME     = 'Game';
+        var STATE_PAUSE    = 'Pause';
+        var STATE_QUIT     = 'Quit';
+        var STATE_OVER     = 'GameOver';
+        var STATE_HIGH     = 'HighScore';
+        var STATE_INDUCTED = 'Inducted';
+        
+        var StateMachine = new StateHandler(STATE_SPLASH);
+        
         </script>
-		<script type="text/javascript" src="Utils.js"></script>
-		<script type="text/javascript" src="View.js"></script>
-		<script type="text/javascript" src="Controller.js"></script>
+        <!-- Views -->
+		<script type="text/javascript" src="Background/Controller.js"></script>
 		<script type="text/javascript" src="Background/View.js"></script>
 		<script type="text/javascript" src="Menu/Controller.js"></script>
 		<script type="text/javascript" src="Menu/View.js"></script>
@@ -70,17 +97,20 @@
             /*var GLOBAL_CANVAS  = document.getElementById('tetrisSurface');
             var GLOBAL_CONTEXT = GLOBAL_CANVAS.getContext('2d');*/
             
+            StateMachine.Start();
+            var Screen = Background.View;
+            
             function ResizeCanvas()
             {
-                Background.Resize();
+                Screen.Resize();
             }
             
             window.addEventListener('resize', ResizeCanvas, false);
             //ResizeCanvas();
             
-            Background.Init();
-            Background.Show();
-            Menu.View.Show();
+            //Background.Init();
+            //Background.Show();
+            //Menu.View.Show();
             
             (function ()
             {
@@ -92,19 +122,22 @@
                     requestAnimFrame(AnimLoop);
                     var last = _lastRender;
                     _lastRender = Date.now();
-                    Background._Render(_lastRender - last);
+                    Screen._Render(_lastRender - last);
                 }
                 
                 function UpdateLoop()
                 {
                     var last = _lastUpdate;
                     _lastUpdate = Date.now();
-                    Background.Update(_lastUpdate - last);
+                    //Background.View.Update(_lastUpdate - last);
+                    StateMachine.Update(_lastUpdate - last);
                 }
                 
                 AnimLoop();
                 window.setInterval(UpdateLoop, 50);
             })();
+            
+            //StateMachine.
             
             //Background._Render(100);
             

@@ -2,8 +2,10 @@ function Controller ()
 {
     // Get the arguments as a real array.
     var args = Array.prototype.slice.call(arguments, 0);
-    var _name = args.shift();
     var f = args.shift();
+    var _name = args.shift();
+    f.Add(this, _name);
+    f = args.shift();
     
     var _model;
     var _view;
@@ -41,7 +43,7 @@ function Controller ()
         },
     });
     
-    this.Controller = this;
+    //this.Controller = this;
     
     this.RegisterEvents = function (events)
     {
@@ -77,4 +79,10 @@ function Controller ()
 }
 
 //Controller.prototype.RegisterEvents = function () {}
+
+
+Controller.prototype.Entry  = function () {}
+Controller.prototype.Exit   = function () {}
+Controller.prototype.Update = function () {}
+Controller.prototype.Render = function () {}
 
