@@ -2,7 +2,7 @@ function View()
 {
     // Get the arguments as a real array.
     var args = Array.prototype.slice.call(arguments, 0);
-    var _parent = args.shift();
+    var _parent = args.shift().View;
     var f = args.shift();
     
     // Double-buffering.
@@ -46,12 +46,36 @@ function View()
         _swap = false;
     }
     
+    var _domHandlers  = {};
+    var _attached = false;
+    
+    function ProcessDOM(event)
+    {
+        if (_enabled)
+        {
+            var x = event.offsetX = event.offsetX || event.pageX - _left;
+            var y = event.offsetY = event.offsetY || event.pageY - _top ;
+            var t = _domHandlers[event.type];
+            for (var i in t)
+            {
+                t[i].Try(x, y, event);
+            }
+        }
+    }
+
     this.Show = function ()
     {
         // Add BOTH buffers to the page, so that they can be swapped.
         document.body.appendChild(_fcanvas);
         document.body.appendChild(_bcanvas);
         this.Resize();
+        // Add the handlers that are pending.
+        _attached = true;
+        for (var on in _domHandlers)
+        {
+            _bcanvas.addEventListener(on, ProcessDOM, false);
+            _fcanvas.addEventListener(on, ProcessDOM, false);
+        }
         this.Show = function ()
         {
             if (!_shown)
@@ -67,6 +91,18 @@ function View()
     {
         _fcanvas.style.display = 'none';
         _shown = false;
+    };
+    
+    var _enabled = true;
+    
+    this.Disable = function ()
+    {
+        _enabled = false;
+    };
+    
+    this.Enable = function ()
+    {
+        _enabled = true;
     };
     
     this.IsShown = function ()
@@ -190,7 +226,10 @@ function View()
     };
     
     var _events = {};
-    var _zones = [];
+    // var _zones = [];
+    
+    var _domActions   = {};
+    var _childActions = {};
     
     this.RegisterEvents = function (events)
     {
@@ -207,44 +246,33 @@ function View()
         delete _events[name];
     };
     
-    function ProcessZone(event)
-    {
-        var x = event.offsetX = event.offsetX || event.pageX - _left;
-        var y = event.offsetY = event.offsetY || event.pageY - _top ;
-        var t = event.type;
-        for (i in _zones)
-        {
-            _zones[i].Try(x, y, t, event);
-        }
-    }
-    
-    var _domHandlers = {};
-    
     if (!document.addEventListener)
     {
-        _bcanvas.addEventListener =
-            _fcanvas.addEventListener =
-                function (a, b, c) { return this.attachEvent('on' + a, b); }
+        _bcanvas.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
+        _fcanvas.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
     }
     
     this.RegisterZone = function (name, on, x, y, w, h)
     {
         if (!_domHandlers[on])
         {
-            _bcanvas.addEventListener(on, ProcessZone, false);
-            _fcanvas.addEventListener(on, ProcessZone, false);
-            _domHandlers[on] = 0;
+            if (_attached)
+            {
+                _bcanvas.addEventListener(on, ProcessDOM, false);
+                _fcanvas.addEventListener(on, ProcessDOM, false);
+            }
+            _domHandlers[on] = [];
         }
-        ++_domHandlers[on];
+        //++_domHandlers[on];
         w += x;
         h += y;
-        _zones.push(
+        _domHandlers[on].push(
             {
                 Name: name,
                 On: on,
-                Try: function (x2, y2, t, event)
+                Try: function (x2, y2, event)
                 {
-                    if (t == on && x <= x2 && x2 < w && y <= y2 && y2 < h)
+                    if (x <= x2 && x2 < w && y <= y2 && y2 < h)
                     {
                         var e = _events[name];
                         if (e && e[1] instanceof Function) e[1].call(e[0], event);
@@ -255,30 +283,120 @@ function View()
             });
     };
     
-    this.RegisterAction = function (name, on)
+    this._ProcessAction = function (event)
+    // ProcessAction;
+    // function ProcessAction(event)
     {
-        if (!_domHandlers[on])
+        if (this.IsShown())
         {
-            document.addEventListener(on, ProcessZone, false);
-            _domHandlers[on] = 0;
-        }
-        ++_domHandlers[on];
-        _zones.push(
+            var t = _childActions[event.type];
+            for (var i in t)
             {
-                Name: name,
-                On: on,
-                Try: function (x2, y2, t, event)
+                if (t[i]._ProcessAction(event)) return true;
+            }
+            if (_enabled)
+            {
+                t = _domActions[event.type];
+                var ret = false;
+                for (var i in t)
                 {
-                    if (t == on)
+                    if (t[i].Try(event)) ret = true;
+                }
+                return ret;
+            }
+        }
+        return false;
+    }
+    
+    if (_parent)
+    {
+        this.RegisterChildAction = function (that, on)
+        {
+            if (!_childActions[on])
+            {
+                _parent.RegisterChildAction(this, on);
+                _childActions[on] = [];
+                _domActions[on] = [];
+            }
+            _childActions[on].push(that);
+        }
+        
+        this.RegisterAction = function (name, on)
+        {
+            if (!_domActions[on])
+            {
+                _parent.RegisterChildAction(this, on);
+                _childActions[on] = [];
+                _domActions[on] = [];
+            }
+            _domActions[on].push(
+                {
+                    Name: name,
+                    On: on,
+                    Try: function (event)
                     {
                         var e = _events[name];
                         if (e && e[1] instanceof Function) e[1].call(e[0], event);
                         return true;
-                    }
-                    return false;
-                },
-            });
-    };
+                    },
+                });
+        };
+    }
+    else
+    {
+        function ProcessRootAction(event)
+        {
+            var t = _childActions[event.type];
+            for (var i in t)
+            {
+                if (t[i]._ProcessAction(event)) return true;
+                // if (ProcessAction.call(t[i], event)) return true;
+            }
+            if (_enabled)
+            {
+                t = _domActions[event.type];
+                var ret = false;
+                for (var i in t)
+                {
+                    if (t[i].Try(event)) ret = true;
+                }
+                return ret;
+            }
+            return false;
+        }
+        
+        this.RegisterChildAction = function (that, on)
+        {
+            if (!_childActions[on])
+            {
+                document.addEventListener(on, ProcessRootAction, false);
+                _childActions[on] = [];
+                _domActions[on] = [];
+            }
+            _childActions[on].push(that);
+        }
+        
+        this.RegisterAction = function (name, on)
+        {
+            if (!_domActions[on])
+            {
+                document.addEventListener(on, ProcessRootAction, false);
+                _childActions[on] = [];
+                _domActions[on] = [];
+            }
+            _domActions[on].push(
+                {
+                    Name: name,
+                    On: on,
+                    Try: function (event)
+                    {
+                        var e = _events[name];
+                        if (e && e[1] instanceof Function) e[1].call(e[0], event);
+                        return true;
+                    },
+                });
+        };
+    }
     
     // this.Unregister = function (name)
     // {
