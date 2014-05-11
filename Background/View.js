@@ -56,8 +56,11 @@ Background.View = new View(0, function ()
             return (this.x += time * this.v) <= 2000.0;
         };
         
+        var _init = false;
         var _hint = false;
+        var _tetris = false;
         var _hintPulse = 1000;
+        var _tetrisFade = 0;
         
         this.Render = function (time, ctx)
         {
@@ -112,6 +115,34 @@ Background.View = new View(0, function ()
                 ctx.textBaseline = 'middle';
                 ctx.fillText('Press any key to continue...', ctx.width / 2, ctx.height - 100);
             }
+            if (_tetris)
+            {
+                if (_tetrisFade < 1.0) _tetrisFade += time / 3500;
+                var x = (ctx.width - 25 * BLOCK_SIZE) / 2;
+                //var r = l + 25 * BLOCK_SIZE;
+                var y = (ctx.height - 24 * BLOCK_SIZE) / 2;
+                //var b = t + 8 * BLOCK_SIZE;
+                /*ctx.fillStyle = 'rgba(255, 255, 255, ' + _tetrisFade + ')';
+                ctx.fillRect(l, t, 25 * BLOCK_SIZE, 9 * BLOCK_SIZE);*/
+                
+                DrawWindow(ctx, x, y, 25, 9, BLOCK_COLOURS[0], _tetrisFade);
+                
+                /*var bc = BLOCK_COLOURS[0];
+                
+                for (var i = l; i != r; i += BLOCK_SIZE)
+                {
+                    DrawBlock(ctx, i, t, bc, _tetrisFade);
+                    DrawBlock(ctx, i, b, bc, _tetrisFade);
+                }
+                
+                for (var i = t + BLOCK_SIZE, x = r - BLOCK_SIZE; i != b; i += BLOCK_SIZE)
+                {
+                    DrawBlock(ctx, l, i, bc, _tetrisFade);
+                    DrawBlock(ctx, x, i, bc, _tetrisFade);
+                }*/
+
+                DrawTetris(ctx, x, y + BLOCK_SIZE * 2, _tetrisFade);
+            }
             
             this.Swap();
         };
@@ -125,13 +156,17 @@ Background.View = new View(0, function ()
         this.Init = function ()
         {
             // Generate a natural looking initial sjy.
-            for (var i = 0; i != 200; ++i)
+            if (!_init)
             {
-                var c = new Cloud();
-                if (c.Move(i * 1000))
+                for (var i = 0; i != 200; ++i)
                 {
-                    _clouds.push(c);
+                    var c = new Cloud();
+                    if (c.Move(i * 1000))
+                    {
+                        _clouds.push(c);
+                    }
                 }
+                _init = true;
             }
         };
         
@@ -141,12 +176,26 @@ Background.View = new View(0, function ()
             _hintPulse = 1000;
         };
         
+        this.Tetris = function (t)
+        {
+            _tetris = t;
+            _tetrisFade = 0;
+        };
+        
         this.RegisterZone('Continue', 'click', 0, 0, 5000, 2000);
     });
 
 
 
-
-
+// {
+    // Bla()
+    // {
+        // let u = 6;
+    // }
+    // function F()
+    // {
+        
+    // }
+// }
 
 

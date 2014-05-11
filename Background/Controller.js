@@ -7,9 +7,14 @@ Background = new Controller(StateMachine, STATE_SPLASH, function ()
         
         this.Entry = function (from)
         {
+            _wait = 0;
             _clickable = true;
+            var target;
+            if (from == '') target = 500;
+            else target = 5000;
             this.View.Init();
             this.View.Hint(false);
+            //this.View.Tetris(true);
             this.View.Show();
             
             this.RegisterEvents({
@@ -18,10 +23,17 @@ Background = new Controller(StateMachine, STATE_SPLASH, function ()
             
             this.Update = function (time)
             {
-                if ((_wait += time) > 2000)
+                if ((_wait += time) > target)
                 {
-                    this.View.Hint(true);
-                    this.Update = function () {};
+                    this.View.Tetris(true);
+                    this.Update = function (time)
+                    {
+                        if ((_wait += time) > target + 3000)
+                        {
+                            this.View.Hint(true);
+                            this.Update = function (time) {};
+                        }
+                    };
                 }
             };
         };
@@ -30,6 +42,7 @@ Background = new Controller(StateMachine, STATE_SPLASH, function ()
         {
             _clickable = false;
             this.View.Hint(false);
+            this.View.Tetris(false);
         };
         
         function Continue(event)

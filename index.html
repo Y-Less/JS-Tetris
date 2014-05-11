@@ -3,7 +3,7 @@
 		<title>Tetris, by Y_Less.</title>
         <style type="text/css">
             
-            body, html, canvas, .canvas_container
+            *
             {
                 border: 0;
                 margin: 0;
@@ -60,6 +60,7 @@
         var STATE_INDUCTED = 'Inducted';
         
         var StateMachine = new StateHandler(STATE_SPLASH);
+        //var StateMachine = new StateHandler(STATE_GAME);
         
         </script>
         <!-- Views -->
@@ -67,6 +68,9 @@
 		<script type="text/javascript" src="Background/View.js"></script>
 		<script type="text/javascript" src="Menu/Controller.js"></script>
 		<script type="text/javascript" src="Menu/View.js"></script>
+		<script type="text/javascript" src="Game/Piece.js"></script>
+		<script type="text/javascript" src="Game/Controller.js"></script>
+		<script type="text/javascript" src="Game/View.js"></script>
 		<!-- <script type="text/javascript" src="Menu/View.js"></script> -->
         <script type="text/javascript">
         

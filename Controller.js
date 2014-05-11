@@ -1,4 +1,4 @@
-function Controller ()
+function Controller()
 {
     // Get the arguments as a real array.
     var args = Array.prototype.slice.call(arguments, 0);

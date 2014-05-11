@@ -13,6 +13,7 @@ Menu = new Controller(StateMachine, STATE_MENU, function ()
         function NewGame(event)
         {
             //this.View.Hide();
+            this.Transition(STATE_GAME);
             console.log('New Game');
         }
         
@@ -37,7 +38,8 @@ Menu = new Controller(StateMachine, STATE_MENU, function ()
         function Exit(event)
         {
             //this.View.Hide();
-            console.log('Exit');
+            //console.log('Exit');
+            this.Transition(STATE_SPLASH);
         }
         
         this.RegisterEvents({

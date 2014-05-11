@@ -20,9 +20,10 @@ Menu.View = new View(Background, function ()
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, ctx.width, ctx.height);
             
-            var bc = BLOCK_COLOURS[0];
+            //var bc = BLOCK_COLOURS[0];
             
-            for (var i = 0, w = ctx.width, y = ctx.height - BLOCK_SIZE; i != w; i += BLOCK_SIZE)
+            DrawWindow(ctx, 0, 0, 25, 24, BLOCK_COLOURS[0]);
+            /*for (var i = 0, w = ctx.width, y = ctx.height - BLOCK_SIZE; i != w; i += BLOCK_SIZE)
             {
                 DrawBlock(ctx, i, 0, bc);
                 DrawBlock(ctx, i, y, bc);
@@ -32,7 +33,7 @@ Menu.View = new View(Background, function ()
             {
                 DrawBlock(ctx, 0, i, bc);
                 DrawBlock(ctx, x, i, bc);
-            }
+            }*/
             
             /*
             
@@ -54,22 +55,7 @@ Menu.View = new View(Background, function ()
             
             */
             
-            var TETRIS = [
-                    "  111 222 333 44  5  66  ",
-                    "   1  2    3  4 4 5 6    ",
-                    "   1  22   3  44  5  6   ",
-                    "   1  2    3  4 4 5   6  ",
-                    "   1  222  3  4 4 5 66   "
-                ];
-            
-            for (var i = 0, y = BLOCK_SIZE * 2, rows = TETRIS.length; i != rows; ++i, y += BLOCK_SIZE)
-            {
-                var row = TETRIS[i];
-                for (var j = 0, x = 0, len = row.length; j != len; ++j, x += BLOCK_SIZE)
-                {
-                    if (row[j] != ' ') DrawBlock(ctx, x, y, BLOCK_COLOURS[row[j]]);
-                }
-            }
+            DrawTetris(ctx, 0, BLOCK_SIZE * 2);
             
             /*ctx.fillStyle = 'red';
             ctx.fillRect(ctx.width / 2 - 50, ctx.height / 2 - 15, 100, 30);
