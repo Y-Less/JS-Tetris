@@ -24,7 +24,6 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
             this.Stores.push(CreatePiece());
         }
         
-        
         var _speed = 1000;
         var _step = 0;
         // Like "_speed", but affected by holding "down".
@@ -32,7 +31,48 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
         
         //this.Saved;
         this.Piece = CreatePiece();
+        this.Piece.X = 2;
+        this.Piece.Y = -4;
         //this.Saved = CreatePiece();
+        var _paused = false;
+        var _destroyed = 0;
+        
+        var _boxit = false;
+        
+        var _left    = 0;
+        var _right   = 0;
+        var _rotateL = 0;
+        var _rotateR = 0;
+        
+        var _noRepeat = true;
+        
+        this.Entry = function (from)
+        {
+            this.Grid = [];
+            for (var i = 0; i != _rows; ++i) this.Grid.push(_onerow.slice(0));
+            this.Stores = [];
+            this.Saved = NO_PIECE;
+            for (var i = 0; i != _futurePieces; ++i)
+            {
+                this.Stores.push(CreatePiece());
+            }
+            _speed = 1000;
+            _step = 0;
+            _dropSpeed = _speed;
+            this.Piece = CreatePiece();
+            this.Piece.X = 2;
+            this.Piece.Y = -4;
+            _boxit = false;
+            _left    = 0;
+            _right   = 0;
+            _rotateL = 0;
+            _rotateR = 0;
+            _noRepeat = true;
+            _paused = false;
+            _destroyed = 0;
+            this.View.Dirty();
+            this.View.Show();
+        };
         
         function Shuffle()
         {
@@ -48,24 +88,17 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
 			}
             this.Stores.push(CreatePiece());
             this.Piece = this.Stores.shift();
+            this.Piece.X = 2;
+            this.Piece.Y = -4;
             _dropSpeed = _speed;
             return false;
         }
         
-        
-        var _boxit = false;
-        
-        var _left    = 0;
-        var _right   = 0;
-        var _rotateL = 0;
-        var _rotateR = 0;
-        
-        var _noRepeat = true;
-        
         function DoDrop(event)
         {
+            if (_paused) return;
             _noRepeat = true;
-            console.log('down');
+            //console.log('down');
             switch (event.keyCode)
             {
                 case KeyboardEvent.DOM_VK_DOWN:
@@ -76,9 +109,15 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
         
         function DoMove(event)
         {
-            if (_noRepeat)
+            if (_paused)
             {
-                console.log('up');
+                if (event.keyCode == KeyboardEvent.DOM_VK_PAUSE)
+                    _paused = false;
+                return;
+            }
+            //if (_noRepeat)
+            {
+                //console.log('up');
                 switch (event.keyCode)
                 {
                     case KeyboardEvent.DOM_VK_SPACE:
@@ -94,8 +133,10 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
                         _dropSpeed = 100;
                         break;
                     case KeyboardEvent.DOM_VK_ESCAPE:
+                        this.Transition(STATE_MENU);
                         break;
                     case KeyboardEvent.DOM_VK_PAUSE:
+                        _paused = true;
                         break;
                     case KeyboardEvent.DOM_VK_UP:
                         ++_rotateR;
@@ -104,14 +145,6 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
                 _noRepeat = false;
             }
         }
-        
-        this.Entry = function (from)
-        {
-            this.View.Show();
-            _speed = 1000;
-            _step = 0;
-            _dropSpeed = _speed;
-        };
         
         this.Exit = function (to)
         {
@@ -176,8 +209,33 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
             }
         }
         
+		function RowComplete(row)
+		{
+			//var row = _grid[r];
+			for (var j = 0; j != _cols; ++j) if (row[j] < 0) return false;
+			return true;
+		}
+		
+		function DestroyRows()
+		{
+			var removed = [];
+			var rem = 0;
+			for (var i = 0; i != _rows; ++i)
+			{
+				if (RowComplete(this.Grid[rem]))
+				{
+					this.Grid.splice(rem, 1);
+                    removed.push(i);
+				}
+				else ++rem;
+			}
+			for ( ; rem < _rows; ++rem) this.Grid.splice(0, 0, _onerow.slice(0));
+			return removed;
+		}
+		
         this.Update = function (time)
         {
+            if (_paused) return;
             var piece = this.Piece;
             MovePiece.call(this, piece);
             // Try move left or right.
@@ -186,6 +244,18 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
                 if (!piece.Boxed)
                 {
                     // TODO: Swap this piece with the one in the store.
+                    if ((this.Piece = this.Saved) == NO_PIECE)
+                    {
+                        this.Stores.push(CreatePiece());
+                        this.Piece = this.Stores.shift();
+                    }
+                    this.Piece.X = 2;
+                    this.Piece.Y = -4;
+                    // piece.X = 0;
+                    // piece.Y = 0;
+                    piece.Reset();
+                    piece.Boxed = true;
+                    this.Saved = piece;
                 }
                 _boxit = false;
             }
@@ -202,6 +272,18 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
                     if (Shuffle.call(this))
                     {
                         window.alert('GAME OVER!');
+                        this.Transition(STATE_MENU);
+                    }
+                    else
+                    {
+                        var u = DestroyRows.call(this).length;
+                        while (u)
+                        {
+                            if (++_destroyed % 10 == 0)
+                            {
+                                _dropSpeed = (_speed *= 0.75);
+                            }
+                        }
                     }
                 }
                 

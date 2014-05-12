@@ -107,7 +107,7 @@ var Grid = new (function (_rows, _cols)
 				}
 				else ++rem;
 			}
-			for ( ; rem < _rows; ++rem) _grid.push(_onerow.slice(0));
+			for ( ; rem < _rows; ++rem) _grid.splice(0, 0, _onerow.slice(0));
 			return removed;
 		}
 		

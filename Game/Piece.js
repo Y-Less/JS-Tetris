@@ -2,9 +2,10 @@ function Piece(_shape)
 {
     this.Parts = [];
     
-    this.X = 2;
-    this.Y = -4;
-    
+    this.X = 0;
+    this.Y = 0;
+    this.A = 0;
+    this.Boxed = false;
     this.Colour = 'black';
     this.CC = 0;
     
@@ -32,14 +33,13 @@ function Piece(_shape)
     // Each piece has 4 parts, but no reason that can't change.
     var _len = this.Parts.length;
     
-    
-    
 	this.Rotate = function (dir)
 	{
         var parts = this.Parts;
         var tmp;
-        //while (dir > 0)
-        if (dir > 0)
+        this.A = (this.A + dir + 4) % 4; // JS mod is signed.
+        while (dir > 0)
+        //if (dir > 0)
         {
             for (var i in parts)
             {
@@ -47,10 +47,10 @@ function Piece(_shape)
                 parts[i].x = parts[i].y;
                 parts[i].y = 3 - tmp;
             }
-            //--dir;
+            --dir;
         }
-        //while (dir < 0)
-        else
+        while (dir < 0)
+        //else
         {
             for (var i in parts)
             {
@@ -58,9 +58,17 @@ function Piece(_shape)
                 parts[i].y = parts[i].x;
                 parts[i].x = 3 - tmp;
             }
-            //++dir;
+            ++dir;
         }
 	};
+    
+    this.Reset = function ()
+    {
+        this.Rotate(4 - this.A);
+        this.X = 0;
+        this.Y = 0;
+        this.A = 0;
+    };
     
     this.Move = function (x, y)
     {
@@ -71,9 +79,13 @@ function Piece(_shape)
     this.Draw = function (ctx, x, y, a)
     {
         var parts = this.Parts;
+        var check;
         for (var i in parts)
         {
-            DrawBlock(ctx, x + (parts[i].x * BLOCK_SIZE), y + (parts[i].y * BLOCK_SIZE), this.Colour, a);
+            if (parts[i].y + this.Y >= 0)
+            {
+                DrawBlock(ctx, x + (parts[i].x * BLOCK_SIZE), y + (parts[i].y * BLOCK_SIZE), this.Colour, a);
+            }
         }
     };
 	
