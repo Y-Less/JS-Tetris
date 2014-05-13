@@ -4,226 +4,407 @@
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty#Creating_a_property
 
-Object.extend = (function ()
-    {
-        function Surrogate() {}
-        
-        return function (base, sub, methods)
-            {
-                if (base instanceof Object && sub instanceof Object)
-                {
-                    Surrogate.prototype = base.prototype;
-                    sub.prototype = new Surrogate();
-                    
-                    // Add a reference to the parent's prototype
-                    sub.extends = base.prototype;
-                    
-                    // Copy the methods passed in to the prototype
-                    for (var name in (methods || {}))
-                    {
-                        sub.prototype[name] = methods[name];
-                    }
-                    
-                    // Copy the constructor correctly.
-                    Object.defineProperty(sub.prototype, 'constructor', { 
-                        // Defaults, but explicit anyway.
-                        configurable: false,
-                        enumerable: false,
-                        writable: false,
-                        value: sub
-                    });
-                    
-                    // Copy the constructor correctly.
-                    Object.defineProperty(sub.prototype, 'extends', { 
-                        configurable: false,
-                        enumerable: false,
-                        writable: false,
-                        value: base.prototype
-                    });
-                    
-                    // Define "$super" as a super constructor call.
-                    Object.defineProperty(sub.prototype, 'super', { 
-                        configurable: false,
-                        enumerable: false,
-                        writable: false,
-                        value: function ()
-                            {
-                                this.extends.constructor.apply(this, arguments);
-                            }
-                    });
-                    
-                    // So we can define the constructor inline.
-                    return sub;
-                }
-            };
-    })();
-
-function Mixin(cons)
+function InterfaceException(that, func, args)
 {
-    if (cons instanceof Function)
-    {
-        this.$mixin = cons;
-    }
-    else if (cons instanceof Object)
-    {
-        this.$mixin = function ()
-        {
-            var ints = Object.getOwnPropertyNames(cons);
-            for (var i in ints)
-            {
-                var n = ints[i];
-                Object.defineProperty(this.prototype, n, Object.getOwnPropertyDescriptor(cons, n));
-            }
-        };
-    }
-    else return;
-    return this;
-}
-
-// Object.mixin = (function ()
-    // {
-        // return function ()
-            // {
-                // var args = Array.prototype.slice.call(arguments, 0);
-                // if (args.length < 2) return;
-                // var obj = args.shift();
-                // var mixin = args.shift();
-                // if (mixin.hasOwnProperty('$mixin'))
-                // {
-                    // mixin.$mixin.apply(obj, args);
-                // }
-            // };
-    // })();
-
-Object.mixin = function ()
-    {
-        var args = Array.prototype.slice.call(arguments, 0);
-        if (args.length < 2) return;
-        var obj = args.shift();
-        var mixin = args.shift();
-        if (obj instanceof Function && mixin instanceof Mixin)
-        {
-            mixin.$mixin.apply(obj, args);
-        }
-    };
-
-function Interface(cons)
-{
-    if (cons instanceof Array)
-    {
-        this.$interface = {};
-        for (var i in cons)
-        {
-            this.$interface[cons[i]] = Interface.FUNCTION;
-        }
-    }
-    else if (cons instanceof Object)
-    {
-        this.$interface = cons;
-    }
-    else return;
-    return this;
-};
-
-Interface.FUNCTION = 0;
-Interface.CONST = 1;
-Interface.VAR = 2;
-
-function InterfaceException(type, name, args)
-{
-    switch (type)
-    {
-        case Interface.FUNCTION:
-            this.message = 'Function "' + name + '" is not implemented.';
-            break;
-        case Interface.CONST:
-            this.message = 'Constant "' + name + '" has not been initialised.';
-            break;
-        case Interface.VAR:
-            this.message = 'Variable "' + name + '" has not been initialised.';
-            break;
-    }
+    this.that = that;
+    this.func = func;
+    this.arguments = args;
+    this.message = 'Function "' + func + '" is not implemented.';
     this.name = 'InterfaceException';
     this.toString = function () { return this.message; };
 }
 
-Object.interface = function (obj, intf)
-    {
-        if (obj instanceof Function && intf instanceof Interface)
+function MixinException(obj)
+{
+    this.that = obj;
+    this.message = 'Array given for mixin - property names are required.';
+    this.name = 'MixinException';
+    this.toString = function () { return this.message; };
+}
+
+function RequiresException(obj, func)
+{
+    this.that = obj;
+    this.func = func;
+    this.message = 'Function "' + func + '" required but not found.';
+    this.name = 'RequiresException';
+    this.toString = function () { return this.message; };
+}
+
+function DefinePropertyException(obj, prop, desc)
+{
+    this.that = obj;
+    this.descriptor = desc;
+    this.message = 'Unable to call "DefineProperty" on "' + prop + '" with .get or .set.';
+    this.name = 'DefinePropertyException';
+    this.toString = function () { return this.message; };
+}
+
+var InterfaceBase = (function ()
+{
+    /*
+        An object that copies a parent's prototype chain so that we can create
+        a new instance of the parent without calling the parent's constructor.
+    */
+    function InterfaceSurrogate() {}
+    
+    Object.inherit = function (base, sub, methods)
         {
-            intf = intf.$interface;
-            var ints = Object.getOwnPropertyNames(intf);
-            for (var i in ints)
+            if (base instanceof Object && sub instanceof Object)
             {
-                var n = ints[i];
-                // All the created properties are enumerable.  It would be a
-                // pretty rubbish 
-                if (!(n in obj))
+                InterfaceSurrogate.prototype = base.prototype;
+                sub.prototype = new InterfaceSurrogate();
+                
+                // Add a reference to the parent's prototype
+                sub.base = base.prototype;
+                
+                // Copy the methods passed in to the prototype
+                for (var name in (methods || {}))
                 {
-                    switch (intf[n])
-                    {
-                        case Interface.FUNCTION:
-                            Object.defineProperty(obj.prototype, n, {
-                                configurable: true,
-                                enumerable: true,
-                                writable: true,
-                                value: (function (name) { return function ()
-                                {
-                                    throw new InterfaceException(Interface.FUNCTION, name, arguments);
-                                }; })(n)
-                            });
-                            break;
-                        // Meaningless in prototype chains.
-                        /*case Interface.CONST:
-                            // Should be set once, when the object is
-                            // constructed, but then never again.
-                            Object.defineProperty(obj.prototype, n, {
-                                configurable: true,
-                                enumerable: true,
-                                set: function (v)
-                                {
-                                    // First write, change this to a regular
-                                    // value.
-                                    Object.defineProperty(obj.prototype, n, {
-                                            configurable: true,
-                                            enumerable: true,
-                                            writable: false,
-                                            value: v
-                                        });
-                                    return v;
-                                },
-                                get: (function (name) { return function ()
-                                {
-                                    throw new InterfaceException(Interface.VAR, name, arguments);
-                                }; })(n)
-                            });
-                            break;
-                        case Interface.VAR:
-                            Object.defineProperty(obj.prototype, n, {
-                                configurable: true,
-                                enumerable: true,
-                                set: function (v)
-                                {
-                                    // First write, change this to a regular
-                                    // value.
-                                    Object.defineProperty(obj.prototype, n, {
-                                            configurable: true,
-                                            enumerable: true,
-                                            writable: true,
-                                            value: v
-                                        });
-                                    return v;
-                                },
-                                get: (function (name) { return function ()
-                                {
-                                    throw new InterfaceException(Interface.VAR, name, arguments);
-                                }; })(n)
-                            });
-                            break;*/
-                    }
+                    sub.prototype[name] = methods[name];
                 }
+                
+                // Copy the constructor correctly.
+                Object.defineProperty(sub.prototype, 'constructor', { 
+                    // Defaults, but explicit anyway.
+                    configurable: false,
+                    enumerable: false,
+                    writable: false,
+                    value: sub
+                });
+                
+                // Copy the constructor correctly.
+                Object.defineProperty(sub.prototype, 'base', { 
+                    configurable: false,
+                    enumerable: false,
+                    writable: false,
+                    value: base.prototype
+                });
+                
+                // Define "$super" as a super constructor call.
+                Object.defineProperty(sub.prototype, 'super', { 
+                    configurable: false,
+                    enumerable: false,
+                    writable: false,
+                    value: function ()
+                        {
+                            this.base.constructor.apply(this, arguments);
+                        }
+                });
+                
+                // So we can define the constructor inline.
+                return sub;
+            }
+        };
+    
+    /*
+        This is a wrapper for "Object.defineProperty", in case it doesn't exist.
+        Of course, I haven't actually tested this code on any browser in which
+        this property doesn't exist...
+    */
+    var DefineProperty = Object.defineProperty || function (obj, prop, desc)
+    {
+        if (desc.get || desc.set)
+        {
+            throw new DefinePropertyException(obj, prop, desc);
+        }
+        else if (desc.value) obj[prop] = desc.value;
+        else obj[prop] = desc;
+    };
+    
+    /*
+        This is a wrapper for "Object.getOwnPropertyDescriptor", in case it
+        doesn't exist.  Wraps the return in an anonymous object with ".value"
+        set for compatibility with other property functions.
+    */
+    var GetProperty = Object.getOwnPropertyDescriptor || function (obj, prop)
+    {
+        if (obj[prop].value !== undefined || obj[prop].get || obj[prop].set) return obj[prop];
+        else return { value: obj[prop], writable: true, configurable: true, enumerable: true };
+    };
+    
+    /*
+        This is a wrapper for "Object.getOwnPropertyNames", trying "Object.keys"
+        if that doesn't exist, and a restricted "for .. in" otherwise.
+    */
+    var PropertyNames = Object.getOwnPropertyNames || Object.keys || function (obj)
+    {
+        var ret = [];
+        for (var i in obj) if (obj.hasOwnProperty(i)) ret.push(i);
+        return ret;
+    };
+    
+    /*
+        The function defined on a prototype chain to be called when the function
+        doesn't exist - a pure abstract function that does something.
+    */
+    function InterfaceFunction(name)
+    {
+        return function ()
+            {
+                throw new InterfaceException(this, name, arguments);
+            };
+    }
+    
+    /*
+        This function takes a parameter (cons) and converts it to an interface.
+        If the parameter is a function it is returned as-is, assuming that it is
+        a function to be called to set up the interface.  If it is an array, it
+        is assumed to be an array of property names, each one to be added to the
+        object prototype as "InterfaceFunction(propertyName)".  If it is an
+        object, each property is copied over, keeping names and descriptors, but
+        again setting the value to "InterfaceFunction(propertyName)".
+        
+        The return value of this function is another function that is executed
+        to add the interface functions to the given target object.
+    */
+    function BuildInterfaceFunction(cons)
+    {
+        if (cons)
+        {
+            if (cons instanceof Function)
+            {
+                return cons;
+            }
+            else if (cons instanceof Array)
+            {
+                var len = cons.length;
+                return function (obj)
+                    {
+                        var prot = obj.prototype;
+                        for (var i = 0; i != len; ++i)
+                        {
+                            var n = cons[i];
+                            // Check the whole prototype chain, not just local.
+                            if (!(n in prot))
+                            {
+                                prot[n] = InterfaceFunction(n);
+                            }
+                        }
+                    };
+            }
+            else if (cons instanceof Object)
+            {
+                var ints = PropertyNames(cons);
+                var len = ints.length;
+                return function (obj)
+                    {
+                        var prot = obj.prototype;
+                        for (var i = 0; i != len; ++i)
+                        {
+                            var n = ints[i];
+                            if (!(n in prot))
+                            {
+                                var desc = GetProperty(cons, n);
+                                // Remove incompatible descriptor types.
+                                if (desc.set) delete desc.set;
+                                if (desc.get) delete desc.get;
+                                desc.value = InterfaceFunction(n);
+                                DefineProperty(prot, n, desc);
+                            }
+                        }
+                    };
             }
         }
-        else return;
+        // Nothing usful passed, return an empty function.
+        return function () {};
     };
+    
+    /*
+        This function is similar to the other "Build" functions, this one
+        returning an function to check that a given object conforms to a given
+        list of requirements.  This is NOT the same as "Interface", but for the
+        most part may as well be.  That is more like a run-time check, with this
+        as a initialisation check.
+        
+        Interfaces are added first, then requirements are checked, then mixins
+        are done if they can be (given that they are what want the
+        requirements).
+    */
+    function BuildContractFunction(cons)
+    {
+        if (cons)
+        {
+            if (cons instanceof Function)
+            {
+                return cons;
+            }
+            else if (cons instanceof Array)
+            {
+                var len = cons.length;
+                return function (obj)
+                    {
+                        var prot = obj.prototype;
+                        for (var i = 0; i != len; ++i)
+                        {
+                            if (!(cons[i] in prot))
+                            {
+                                return false;
+                            }
+                        }
+                        return true;
+                    };
+            }
+            else if (cons instanceof Object)
+            {
+                var ints = PropertyNames(cons);
+                var len = ints.length;
+                return function (obj)
+                    {
+                        var prot = obj.prototype;
+                        for (var i = 0; i != len; ++i)
+                        {
+                            if (!(ints[i] in prot))
+                            {
+                                throw new RequiresException(obj, ints[i])
+                            }
+                        }
+                    };
+            }
+        }
+        return function () {};
+    }
+    
+    /*
+        This function takes a parameter (cons) and converts it to a mixin.
+        If the parameter is a function it is returned as-is, assuming that it is
+        a function to be called to add the mixin parts.  If it is an array, it
+        is invalid, since you can't have names AND functions in an array (you
+        can, but there are better ways).  If it is an object, each property is
+        copied over, keeping names, descriptors, and values.
+        
+        The return value of this function is another function that is executed
+        to add the mixin functions to the given target object.
+    */
+    function BuildMixinFunction(cons)
+    {
+        if (cons)
+        {
+            if (cons instanceof Function)
+            {
+                return cons;
+            }
+            else if (cons instanceof Array)
+            {
+                // Can't be done - we need names and implementations.
+                throw new MixinException(cons);
+            }
+            else if (cons instanceof Object)
+            {
+                var ints = PropertyNames(cons);
+                var len = ints.length;
+                return function (obj)
+                    {
+                        var prot = obj.prototype;
+                        for (var i = 0; i != len; ++i)
+                        {
+                            var n = ints[i];
+                            if (cons[n] instanceof Function && !(n in prot))
+                            {
+                                DefineProperty(prot, n, GetProperty(cons, n));
+                            }
+                        }
+                    };
+            }
+        }
+        return function () {};
+    }
+    
+    Object.specify = function (obj, mixin)
+        {
+            if (obj && obj instanceof Function && mixin && mixin instanceof InterfaceBase)
+            {
+                mixin.Apply(obj);
+            }
+        };
+    
+    return function (_inter, _reqs, _mixers)
+        {
+            _inter  = BuildInterfaceFunction(_inter);
+            _reqs   = BuildContractFunction(_reqs);
+            _mixers = BuildMixinFunction(_mixers);
+            
+            this.Interface = function (inter)
+            {
+                var om = _inter;
+                var nm = BuildInterfaceFunction(inter);
+                _inter = function (obj)
+                    {
+                        om(obj);
+                        nm(obj);
+                    };
+                return this;
+            };
+            
+            this.Contract = function (reqs)
+            {
+                var om = _reqs;
+                var nm = BuildContractFunction(reqs);
+                _reqs = function (obj)
+                    {
+                        om(obj);
+                        nm(obj);
+                    };
+                return this;
+            };
+            
+            this.Mixin = function (mixers)
+            {
+                var om = _mixers;
+                var nm = BuildMixinFunction(mixers);
+                _mixers = function (obj)
+                    {
+                        om(obj);
+                        nm(obj);
+                    };
+                return this;
+            };
+            
+            this.Apply = function (obj, args)
+            {
+                // Add interface functions.
+                _inter(obj);
+                // Check the contract.
+                _reqs(obj);
+                // Add the mixins.
+                _mixers(obj);
+            };
+        };
+})();
+
+function Interface(obj, spec)
+{
+    if (spec)
+    {
+        Object.specify(obj, new InterfaceBase(spec, 0, 0));
+    }
+    else
+    {
+        return new InterfaceBase(obj, 0, 0);
+    }
+}
+
+function Contract()
+{
+    if (spec)
+    {
+        Object.specify(obj, new InterfaceBase(0, spec, 0));
+    }
+    else
+    {
+        return new InterfaceBase(0, obj, 0);
+    }
+}
+
+function Mixin()
+{
+    if (spec)
+    {
+        Object.specify(obj, new InterfaceBase(0, 0, spec));
+    }
+    else
+    {
+        return new InterfaceBase(0, 0, obj);
+    }
+}
 

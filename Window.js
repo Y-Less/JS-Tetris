@@ -9,95 +9,94 @@ function Widget(_parent, _x, _y)
     var MAX = Math.max;
     
     // True when the image has shifted, but not been altered.
-    var _moved = false;
+    var _moved = true;
     
     // True when the image has been changed.
-    var _dirty = false;
-    
-    // True when the dimensions and position of the widget make it impossible to
-    // see.
-    var _noshow = false;
+    var _dirty = true;
+    // Both these are true by default to show the thing initially.
     
     var _children = [];
     
     // Create a surface on which to draw this element.
     var _canvas = document.createElement('canvas');
     var _ctx    = _canvas.getContext('2d');
+    // Useful properties that don't exist normally :(.
+    _ctx.width = 0;
+    _ctx.height = 0;
     
-    var _x = 0;
-    var _y = 0;
+    //var _x = 0;
+    //var _y = 0;
     var _z = 0;
     
     var _width  = 0;
     var _height = 0;
     
-    function NoShow()
-    {
-        // Check if this widget is entirely off the top/left of its parent.
-        _noshow = _x + _width <= 0 || _y + _height <= 0;
-    }
-    
-    // Accessors for moving the element about.
     Object.defineProperty(this, 'X', {
             configurable: false,
             enumerable: false,
             set: function (v)
             {
+                if (v == _x) return;
                 _moved = true;
-                NoShow();
                 return (_x = v);
             },
-            get: function () ( return _x; }
+            get: function () { return _x; }
         });
+    
     Object.defineProperty(this, 'Y', {
             configurable: false,
-            enumerable: false,
+            enumerable: true,
             set: function (v)
             {
+                if (v == _y) return;
                 _moved = true;
-                NoShow();
                 return (_y = v);
             },
-            get: function () ( return _y; }
+            get: function () { return _y; }
         });
     
     // For this one, we need the help of our parent.
     Object.defineProperty(this, 'Z', {
             configurable: false,
-            enumerable: false,
+            enumerable: true,
             set: function (v)
             {
+                if (v == _z) return;
+                if (_parent)
+                {
+                    _parent.Remove(this);
+                    _parent.Add(this, v);
+                }
                 _moved = true;
-                _parent.ChangeZ(this);
                 return (_z = v);
             },
-            get: function () ( return _z; }
+            get: function () { return _z; }
         });
     
     // Accessors for changing the object's size.
     Object.defineProperty(this, 'Width', {
             configurable: false,
-            enumerable: false,
+            enumerable: true,
             set: function (v)
             {
+                if (v == _width) return;
                 if (v <= 0) return; // Invalid size.
                 _dirty = true;
-                NoShow();
-                return (_canvas.width = _width = v);
+                return (_ctx.width = _canvas.width = _width = v);
             },
-            get: function () ( return _width; }
+            get: function () { return _width; }
         });
     Object.defineProperty(this, 'Height', {
             configurable: false,
-            enumerable: false,
+            enumerable: true,
             set: function (v)
             {
+                if (v == _height) return;
                 if (v <= 0) return; // Invalid size.
                 _dirty = true;
-                NoShow();
-                return (_canvas.height = _height = v);
+                return (_ctx.height = _canvas.height = _height = v);
             },
-            get: function () ( return _height; }
+            get: function () { return _height; }
         });
     
     /*
@@ -122,39 +121,23 @@ function Widget(_parent, _x, _y)
         // Find out if this is entirely outside the bounding rect.  If it is,
         // the new bounding box will be invalid.
         if (nbl >= nbr || nbt >= nbb) return;
-        
-        
-        
-        
-        
-        
-        
-        // Check if we are visible in the local parent's context.  We can't
-        // abstract all three 
-        if (_x >= width || _y >= height || _noshow) return false; // Did nothing (unseen).
-        // Get the offset from the global location to this.
-        x += _x;
-        y += _y;
         // The "||" is NOT in the wrong place here.  We save the result and
         // check it.  Also force rendering if the widget is dirty.
-        if ((force = this.Render(ctx, time, _dirty) || _moved || force))
-        {
-            // We have drawn the widget, re place it on the parent canvas.  We
-            // must also take "width" and "height" in to account when drawing -
-            // we don't want to draw beyond the end of out parent's bounds.
-            ctx.drawImage(_canvas, MAX(0, -_x), MAX(0, -_y), MIN(_width, width - _x), MIN(_height, height - _y), x, y);
-            // Here "_x" and "_y" are this widget's offsets from its parent, and
-            // "x" and "y" are the position we are drawing this widget to in the
-            // whole of the world.  The "MAX" expressions are for when this
-            // element has a negative offset.
-        }
+        var moved = _moved;
+        var dirty = _dirty;
+        // In case "Render" adjusts them.
         _moved = false;
         _dirty = false;
+        if ((force = this.Render(_ctx, time, dirty) || moved || force))
+        {
+            // Draw the canvas within our bounding rectangle.
+            ctx.drawImage(_canvas, nbl - x, nbt - y, nbr - nbl, nbb - nbt, nbl, nbt, nbr - nbl, nbb - nbt);
+        }
         for (var i = 0, end = _children.length; i != end; ++i)
         {
             // TODO: Don't have non-overlapping regions force each other to
             // redraw.
-            force = _children[i]._Render(ctx, x, y, _width, _height, time, force) || force;
+            force = _children[i]._Render(ctx, x, y, nbl, nbt, nbr, nbb, time, force) || force;
         }
         // Is this view dirty?
         return force;
@@ -162,19 +145,36 @@ function Widget(_parent, _x, _y)
     
     this.Add = function (child, z)
     {
-        child.Z = z = z || 0;
+        if (z < 0) return;
         // Add this to the list of children.
         for (var i = 0, end = _children.length; i != end; ++i)
         {
             if (_children[i].Z > z)
             {
                 _children.splice(i, 0, child);
+                return;
             }
-            return;
         }
         _children.push(child);
     };
-};
+    
+    this.Remove = function (child)
+    {
+        // Add this to the list of children.
+        for (var i = 0, end = _children.length; i != end; ++i)
+        {
+            if (_children[i] == child)
+            {
+                _children.splice(i, 1);
+                return;
+            }
+        }
+    };
+    
+    if (_parent) _parent.Add(this, _z);
+    
+    return this;
+}
 
 Interface(Widget, ['Render', 'Update', 'On']);
 
@@ -182,73 +182,73 @@ Interface(Widget, ['Render', 'Update', 'On']);
 
 
 
-function Button()
-{
-    /*
-        #     #                                           
-        ##   ## ###### #    # #####  ###### #####   ####  
-        # # # # #      ##  ## #    # #      #    # #      
-        #  #  # #####  # ## # #####  #####  #    #  ####  
-        #     # #      #    # #    # #      #####       # 
-        #     # #      #    # #    # #      #   #  #    # 
-        #     # ###### #    # #####  ###### #    #  ####  
-    */
-    var _down = false;
-    var _lastDrawn = true;
+// function Button()
+// {
+    // /*
+        // #     #                                           
+        // ##   ## ###### #    # #####  ###### #####   ####  
+        // # # # # #      ##  ## #    # #      #    # #      
+        // #  #  # #####  # ## # #####  #####  #    #  ####  
+        // #     # #      #    # #    # #      #####       # 
+        // #     # #      #    # #    # #      #   #  #    # 
+        // #     # ###### #    # #####  ###### #    #  ####  
+    // */
+    // var _down = false;
+    // var _lastDrawn = true;
     
-    /*
-        ######                                         #     #                                          
-        #     # #####  # #    #   ##   ##### ######    ##   ## ###### ##### #    #  ####  #####   ####  
-        #     # #    # # #    #  #  #    #   #         # # # # #        #   #    # #    # #    # #      
-        ######  #    # # #    # #    #   #   #####     #  #  # #####    #   ###### #    # #    #  ####  
-        #       #####  # #    # ######   #   #         #     # #        #   #    # #    # #    #      # 
-        #       #   #  #  #  #  #    #   #   #         #     # #        #   #    # #    # #    # #    # 
-        #       #    # #   ##   #    #   #   ######    #     # ######   #   #    #  ####  #####   ####  
-    */
-    function OnMouseDown(event)
-    {
-        _down = true;
-    }
+    // /*
+        // ######                                         #     #                                          
+        // #     # #####  # #    #   ##   ##### ######    ##   ## ###### ##### #    #  ####  #####   ####  
+        // #     # #    # # #    #  #  #    #   #         # # # # #        #   #    # #    # #    # #      
+        // ######  #    # # #    # #    #   #   #####     #  #  # #####    #   ###### #    # #    #  ####  
+        // #       #####  # #    # ######   #   #         #     # #        #   #    # #    # #    #      # 
+        // #       #   #  #  #  #  #    #   #   #         #     # #        #   #    # #    # #    # #    # 
+        // #       #    # #   ##   #    #   #   ######    #     # ######   #   #    #  ####  #####   ####  
+    // */
+    // function OnMouseDown(event)
+    // {
+        // _down = true;
+    // }
     
-    function OnMouseUp(event)
-    {
-        if (_down)
-        {
-            _down = false;
-            // Trigger the "click" event.
-        }
-    }
+    // function OnMouseUp(event)
+    // {
+        // if (_down)
+        // {
+            // _down = false;
+            // // Trigger the "click" event.
+        // }
+    // }
     
-    function OnMouseOff(event)
-    {
-        _down = false;
-    }
+    // function OnMouseOff(event)
+    // {
+        // _down = false;
+    // }
     
-    function Render(ctx)
-    {
-        var dirty = false;
-        // Call a rendering function for the current state, and pass whether or
-        // not the state has changed since the last rendering.
-        if (_down) dirty = this.DrawDown(!_lastDrawn, ctx);
-        else       dirty = this.DrawUp  (_lastDrawn, ctx);
-        _lastDrawn = _down;
-        return dirty;
-    }
+    // function Render(ctx)
+    // {
+        // var dirty = false;
+        // // Call a rendering function for the current state, and pass whether or
+        // // not the state has changed since the last rendering.
+        // if (_down) dirty = this.DrawDown(!_lastDrawn, ctx);
+        // else       dirty = this.DrawUp  (_lastDrawn, ctx);
+        // _lastDrawn = _down;
+        // return dirty;
+    // }
     
-    /*
-         #####                                                                      
-        #     #  ####  #    #  ####  ##### #####  #    #  ####  #####  ####  #####  
-        #       #    # ##   # #        #   #    # #    # #    #   #   #    # #    # 
-        #       #    # # #  #  ####    #   #    # #    # #        #   #    # #    # 
-        #       #    # #  # #      #   #   #####  #    # #        #   #    # #####  
-        #     # #    # #   ## #    #   #   #   #  #    # #    #   #   #    # #   #  
-         #####   ####  #    #  ####    #   #    #  ####   ####    #    ####  #    # 
-    */
-    (function ()
-    {
+    // /*
+         // #####                                                                      
+        // #     #  ####  #    #  ####  ##### #####  #    #  ####  #####  ####  #####  
+        // #       #    # ##   # #        #   #    # #    # #    #   #   #    # #    # 
+        // #       #    # # #  #  ####    #   #    # #    # #        #   #    # #    # 
+        // #       #    # #  # #      #   #   #####  #    # #        #   #    # #####  
+        // #     # #    # #   ## #    #   #   #   #  #    # #    #   #   #    # #   #  
+         // #####   ####  #    #  ####    #   #    #  ####   ####    #    ####  #    # 
+    // */
+    // (function ()
+    // {
         
-    })();
+    // })();
     
-    return this;
-}
+    // return this;
+// }
 
