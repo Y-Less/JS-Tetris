@@ -159,3 +159,14 @@ function DrawWindow(ctx, x, y, w, h, c, a)
     }
 }
 
+
+
+var KEY_LEFT  = 37;
+var KEY_UP    = 38;
+var KEY_RIGHT = 39;
+var KEY_DOWN  = 40;
+var KEY_SPACE = 32;
+var KEY_ESC   = 27;
+var KEY_PAUSE = 19;
+
+

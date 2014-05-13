@@ -101,7 +101,7 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
             //console.log('down');
             switch (event.keyCode)
             {
-                case KeyboardEvent.DOM_VK_DOWN:
+                case KEY_DOWN:
                     _dropSpeed = _speed;
                     break;
             }
@@ -109,9 +109,10 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
         
         function DoMove(event)
         {
+            console.log(event.keyCode);
             if (_paused)
             {
-                if (event.keyCode == KeyboardEvent.DOM_VK_PAUSE)
+                if (event.keyCode == KEY_PAUSE)
                     _paused = false;
                 return;
             }
@@ -120,25 +121,25 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
                 //console.log('up');
                 switch (event.keyCode)
                 {
-                    case KeyboardEvent.DOM_VK_SPACE:
+                    case KEY_SPACE:
                         _boxit = true;;
                         break;
-                    case KeyboardEvent.DOM_VK_LEFT:
+                    case KEY_LEFT:
                         ++_left;
                         break;
-                    case KeyboardEvent.DOM_VK_RIGHT:
+                    case KEY_RIGHT:
                         ++_right;
                         break;
-                    case KeyboardEvent.DOM_VK_DOWN:
+                    case KEY_DOWN:
                         _dropSpeed = 100;
                         break;
-                    case KeyboardEvent.DOM_VK_ESCAPE:
+                    case KEY_ESC:
                         this.Transition(STATE_MENU);
                         break;
-                    case KeyboardEvent.DOM_VK_PAUSE:
+                    case KEY_PAUSE:
                         _paused = true;
                         break;
-                    case KeyboardEvent.DOM_VK_UP:
+                    case KEY_UP:
                         ++_rotateR;
                         break;
                 }
@@ -277,7 +278,7 @@ TetrisGame = new Controller(StateMachine, STATE_GAME, function ()
                     else
                     {
                         var u = DestroyRows.call(this).length;
-                        while (u)
+                        while (u--)
                         {
                             if (++_destroyed % 10 == 0)
                             {
