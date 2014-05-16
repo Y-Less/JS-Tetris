@@ -177,7 +177,7 @@
                     //ctx.fillRect(250, 300, 600, 500);
                     //ctx.fillStyle = 'skyblue';
                     //ctx.fillRect(0, 0, ctx.width, ctx.height);
-                    _last = time;
+                    //_last = time;
                     return true;
                 }
                 return false;
@@ -263,7 +263,7 @@
             {
                 this.super(x, y);
                 
-                /*this.RenderChrome = function (ctx, time, force)
+                this.RenderChrome = function (ctx, time, force)
                 {
                     if (force)
                     {
@@ -299,7 +299,23 @@
                         ctx.fillRect(5, 5, w - 10, 27);
                         //this.Chrome().FoldL('_Render', force, [ctx, x, y, 0, 0, w, h, time]);
                     }
-                };*/
+                };
+                
+                this.OnChrome = function (what, x, y, event)
+                {
+                    switch (what)
+                    {
+                        case 'mousedown':
+                            //if (x >= 5 && x < this.Width - 5 && )
+                            {
+                                Drag.Start(this, event);
+                            }
+                            break;
+                        //case 'mouseup':
+                        //        Drag.End(this);
+                        //    break;
+                    }
+                };
                 
                 this.RegisterAction('click');
                 
@@ -310,12 +326,14 @@
             }, Window);
         
         
-        var SimpleChrome = Inherit(function ()
+        /*var SimpleChrome = Inherit(function ()
             {
                 this.super(0, 0);
                 
                 this.Width = '100%';
                 this.Height = '100%';
+                
+                var _hooked
                 
                 this.Render = function (ctx, time, force)
                 {
@@ -354,7 +372,9 @@
                         //this.Chrome().FoldL('_Render', force, [ctx, x, y, 0, 0, w, h, time]);
                     }
                 };
-            }, Widget);
+                
+                this.On = function (ctx, 
+            }, Widget);*/
         
         
         
@@ -365,17 +385,67 @@
         var wnd = new BoringWindow(100, 0);
         view.AddWidget(w);
         view.AddWidget(qq);
-        wnd.AddChrome(new SimpleChrome());
-        wnd.Show();
+        //wnd.AddChrome(new SimpleChrome());
+        //wnd.Show();
         wnd.Viewport = view;
         wnd.Width = 500;
         wnd.Height = 500;
         
-        wnd._Render(1000);
+        //wnd._Render(1000);
         
         //w._Render(true, canvas, 0, 0, 0, 0, 400, 400, 10000);
         
         
+        
+        window.requestAnimFrame = (function ()
+            {
+                return window.requestAnimationFrame    ||
+                    window.webkitRequestAnimationFrame ||
+                    window.mozRequestAnimationFrame    ||
+                    function (callback)
+                    {
+                        window.setTimeout(callback, 1000 / 60);
+                    };
+            })();
+        
+        window.onload = function()
+        {
+            //StateMachine.Start();
+            //var Screen = Background.View;
+            
+            function ResizeCanvas()
+            {
+                Screen.Resize();
+            }
+            
+            //window.addEventListener('resize', ResizeCanvas, false);
+            (function ()
+            {
+                var _lastRender = Date.now();
+                var _lastUpdate = Date.now();
+                
+                wnd.Show();
+                
+                function AnimLoop()
+                {
+                    requestAnimFrame(AnimLoop);
+                    var last = _lastRender;
+                    _lastRender = Date.now();
+                    wnd._Render(_lastRender - last);
+                    //Screen._Render(_lastRender - last);
+                }
+                
+                function UpdateLoop()
+                {
+                    var last = _lastUpdate;
+                    _lastUpdate = Date.now();
+                    StateMachine.Update(_lastUpdate - last);
+                }
+                
+                AnimLoop();
+                //window.setInterval(UpdateLoop, 50);
+            })();
+        };
         
         
         

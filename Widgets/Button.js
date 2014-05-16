@@ -24,7 +24,7 @@ function Button(_parent, _x, _y)
         // Need mouse-out events to cancel a click.
         switch (what)
         {
-            case 'mousedown':
+            /*case 'mousedown':
                 if (!_down)
                 {
                     _down = true;
@@ -38,7 +38,7 @@ function Button(_parent, _x, _y)
                     this.Dirty();
                     this.Click(event);
                 }
-                break;
+                break;*/
             case 'click':
                 console.log('x: ' + x + ', y: ' + y);
                 break;

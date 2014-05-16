@@ -113,6 +113,54 @@ function Placeable(_x, _y)
     return this;
 }
 
+var Drag = (function ()
+    {
+        var _what;
+        var _ex;
+        var _ey;
+        var _ox;
+        var _oy;
+        
+        
+        return {
+                Start: function (what, event)
+                {
+                    console.log('start');
+                    if (what instanceof Placeable && !_what)
+                    {
+                        console.log('begin');
+                        _what = what;
+                        _ex = event.pageX;
+                        _ey = event.pageY;
+                        _ox = what.X;
+                        _oy = what.Y;
+                    }
+                },
+                
+                End: function (what)
+                {
+                    console.log('end');
+                    //if (what == _what)
+                    {
+                        _what = 0;
+                    }
+                },
+                
+                Move: function (event)
+                {
+                    console.log('move');
+                    if (_what)
+                    {
+                        _what.X = _ox + (event.pageX - _ex);
+                        _what.Y = _oy + (event.pageY - _ey);
+                    }
+                }
+            };
+    })();
+
+document.body.addEventListener('mousemove', Drag.Move, false);
+document.body.addEventListener('mouseup', Drag.End, false);
+
 function Widget(x, y)
 {
     "use strict";
@@ -441,7 +489,11 @@ function Viewport()
     
     this.On = function (what, x, y, event)
     {
-        return _widgets.FoldR('_On', [what, x, y, _bounds.l, _bounds.t, event], false);
+        if (x >= _bounds.l && x < _bounds.r && y >= _bounds.t && y < _bounds.b)
+        {
+            return _widgets.FoldR('_On', [what, x, y, _bounds.l, _bounds.t, event], false);
+        }
+        return false;
     };
     
     this.AddWidget = function (child)
@@ -508,6 +560,7 @@ function Window(x, y)
     */
     this.Render = function (ctx, time, force)
     {
+        force = this.RenderChrome(ctx, time, force) || force;
         force = _chrome.FoldL('_Render', force, [ctx, 0, 0, this.Width, this.Height, 0, 0, this.Width, this.Height, time]) || force;
         return _viewport.Render(ctx, time, this.GetViewport(this.Width, this.Height, time), force);
         // Render all the children.
@@ -515,8 +568,10 @@ function Window(x, y)
     
     this.On = function (what, x, y, event)
     {
-        if (!_viewport.On(what, x, y, event))
-            _chrome.FoldR('_On', [what, x, y, 0, 0, event], false)
+        if (!_viewport.On(what, x, y, event) && !_chrome.FoldR('_On', [what, x, y, 0, 0, event], false))
+        {
+            this.OnChrome(what, x, y, event);
+        }
         return false;
     };
     
@@ -530,11 +585,17 @@ function Window(x, y)
         _chrome.Remove(child);
     };
     
+    this.RegisterAction('mousedown');
+    //this.RegisterAction('mouseup');
+    
     return this;
 }
 
 Inherit(Window, View);
-Interface(Window, ['GetViewport']);
+Interface(Window, ['GetViewport', 'RenderChrome', 'OnChrome']);
+
+
+
 
 
 
