@@ -1,13 +1,85 @@
 <html>
     <head>
+        <style type="text/css">
+            *
+            {
+                border: 0;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select:none;
+                user-select:none;
+            }
+            
+            .view_container > *, #container
+            {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            
+            .view_container > div
+            {
+                z-index: 3;
+                width: 100%;
+                height: 100%;
+            }
+            
+            #container
+            {
+                width: 100%;
+                height: 100%;
+            }
+            
+            .view_container
+            {
+                position: absolute;
+                display: none;
+            }
+        </style>
     </head>
     <body>
-        <canvas id="gameboard" width="1000" height="1500">
-            I realise it is non-portable, but this page requires &lt;canvas&gt; and JavaScript, sorry.
-        </canvas>
+        <div id="container">
+            <canvas id="gameboard" width="1000" height="500">
+                I realise it is non-portable, but this page requires &lt;canvas&gt; and JavaScript, sorry.
+            </canvas>
+            <div class="view_container" style="width: 200px; height: 200px; display: block; top: 100px; left: 100px;">
+                <canvas id="eee" width="200" height="200">
+                    I realise it is non-portable, but this page requires &lt;canvas&gt; and JavaScript, sorry.
+                </canvas>
+                <div>
+                </div>
+            </div>
+        </div>
         <script type="text/javascript" src="Extend.js"></script>
-        <script type="text/javascript" src="Window.js"></script>
+        <script type="text/javascript" src="Utils/Container.js"></script>
+        <script type="text/javascript" src="Widgets/Widget.js"></script>
+        <script type="text/javascript" src="Widgets/Button.js"></script>
         <script type="text/javascript">
+        
+        function Bla(_child, _d)
+        {
+            this.H = function (a, b)
+            {
+                console.log('' + a + ', ' + b + ', ' + _d);
+            }
+            var G = function (a, b)
+            {
+                this.H(a, b);
+            }
+            
+            this.F = function ()
+            {
+                _child.H.apply(_child, [1, 2]);
+            }
+        }
+        
+        var t0 = new Bla(0, 46);
+        var t1 = new Bla(t0, 42);
+        t1.F();
+        
         
         function Every(_ms, _init, _catchup)
         {
@@ -55,12 +127,12 @@
                 YEAH: Interface.CONST
             }));*/
         
-        var Cat = Object.inherit(Animal, function (x)
+        var Cat = Object.inherit(function (x)
             {
                 console.log('a');
                 this.super(x);
                 console.log('b');
-            });
+            }, Animal);
         
         Cat.prototype.Hi = function () { console.log('Cat.Hi'); }
         
@@ -79,11 +151,12 @@
         
         function ASSERT(x) { if (x) console.log('PASS'); else console.log('FAIL'); }
         
-        function Square(_parent, _x, _y, _colour)
+        function Square(_x, _y, _colour)
         {
+            "use strict";
             var _last = Every(1000);
             
-            this.super(_parent, _x, _y);
+            this.super(_x, _y);
             
             this.Render = function (ctx, time, force)
             {
@@ -113,13 +186,13 @@
         }
         
         
-        Object.inherit(Widget, Square);
+        Object.inherit(Square, Widget);
         
         
         //w = new Widget(0, -10, -10);
-        w = new Square(0, -10, -10);
-        ASSERT(w.X == -10);
-        ASSERT(w.Y == -10);
+        w = new Square(0, 0);
+        ASSERT(w.X == 0);
+        ASSERT(w.Y == 0);
         w.Width = 600;
         w.Height = 600;
         //console.log('1');
@@ -128,11 +201,182 @@
         ASSERT(w.Height == 600);
         
         //<!-- w._Render(canvas, 10, 10, 20, 20, 60, 60, 10000, true); -->
-        x = new Square(w, 750, 750);
-        x.Width = 250;
-        x.Height = 250;
+        x = new Square(200, 200);
+        x.Width = 300;
+        x.Height = 300;
         
-        w._Render(canvas, 10, 10, 0, 0, 400, 400, 10000, true);
+        y = new Square(100, 100);
+        y.Width = 150;
+        y.Height = 150;
+        
+        z = new Square(50, 50);
+        z.Width = '100%';
+        z.Height = 75;
+        
+        y.AddWidget(z);
+        w.AddWidget(y);
+        w.AddWidget(x);
+        //y.AddWidget(z);
+        
+        var view = new Viewport();
+        
+        
+        var Fancy = Inherit(function (x, y)
+            {
+                this.super(x, y);
+                this.RenderDown = function (ctx, time)
+                    {
+                        console.log('down');
+                        console.log('down');
+                    };
+                this.RenderUp = function (ctx, time)
+                    {
+                        console.log('up');
+                        console.log('up');
+                    };
+                this.Width = 100;
+                this.Height = 100;
+            }, Button);
+        
+        
+        
+        
+        
+        qq = new GreyButton3D(0, 10);
+        
+        qq.Align = 'center';
+        x.Z = 1;
+        
+        function DragTarget()
+        {
+            this.Render = function (ctx, time, force)
+            {
+                
+            };
+        };
+        
+        Inherit(DragTarget, Widget);
+        
+        
+        
+        var BoringWindow = Inherit(function (x, y)
+            {
+                this.super(x, y);
+                
+                /*this.RenderChrome = function (ctx, time, force)
+                {
+                    if (force)
+                    {
+                        var w = ctx.width;
+                        var h = ctx.height;
+                        ctx.fillStyle = 'lightgray';
+                        ctx.fillRect(0, 0, w, h);
+                        
+                        ctx.strokeStyle = 'black';
+                        ctx.beginPath();
+                        ctx.moveTo(w - 1, 1);
+                        ctx.lineTo(w - 1, h - 1);
+                        ctx.lineTo(1, h - 1);
+                        ctx.moveTo(2, h - 2);
+                        ctx.lineTo(w - 2, h - 2);
+                        ctx.lineTo(w - 2, 2);
+                        ctx.stroke();
+                        
+                        ctx.strokeStyle = 'white';
+                        ctx.beginPath();
+                        ctx.moveTo(w - 1, 0);
+                        ctx.lineTo(0, 0);
+                        ctx.lineTo(0, h - 1);
+                        ctx.moveTo(1, h - 2);
+                        ctx.lineTo(1, 1);
+                        ctx.lineTo(w - 2, 1);
+                        ctx.stroke();
+                        
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(5, 35, w - 10, h - 40);
+                        
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(5, 5, w - 10, 27);
+                        //this.Chrome().FoldL('_Render', force, [ctx, x, y, 0, 0, w, h, time]);
+                    }
+                };*/
+                
+                this.RegisterAction('click');
+                
+                this.GetViewport = function (w, h)
+                {
+                    return {l: 5, t: 35, r: w - 5, b: h - 5};
+                };
+            }, Window);
+        
+        
+        var SimpleChrome = Inherit(function ()
+            {
+                this.super(0, 0);
+                
+                this.Width = '100%';
+                this.Height = '100%';
+                
+                this.Render = function (ctx, time, force)
+                {
+                    if (force)
+                    {
+                        var w = ctx.width;
+                        var h = ctx.height;
+                        ctx.fillStyle = 'lightgray';
+                        ctx.fillRect(0, 0, w, h);
+                        
+                        ctx.strokeStyle = 'black';
+                        ctx.beginPath();
+                        ctx.moveTo(w - 1, 1);
+                        ctx.lineTo(w - 1, h - 1);
+                        ctx.lineTo(1, h - 1);
+                        ctx.moveTo(2, h - 2);
+                        ctx.lineTo(w - 2, h - 2);
+                        ctx.lineTo(w - 2, 2);
+                        ctx.stroke();
+                        
+                        ctx.strokeStyle = 'white';
+                        ctx.beginPath();
+                        ctx.moveTo(w - 1, 0);
+                        ctx.lineTo(0, 0);
+                        ctx.lineTo(0, h - 1);
+                        ctx.moveTo(1, h - 2);
+                        ctx.lineTo(1, 1);
+                        ctx.lineTo(w - 2, 1);
+                        ctx.stroke();
+                        
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(5, 35, w - 10, h - 40);
+                        
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(5, 5, w - 10, 27);
+                        //this.Chrome().FoldL('_Render', force, [ctx, x, y, 0, 0, w, h, time]);
+                    }
+                };
+            }, Widget);
+        
+        
+        
+        
+        
+        
+        
+        var wnd = new BoringWindow(100, 0);
+        view.AddWidget(w);
+        view.AddWidget(qq);
+        wnd.AddChrome(new SimpleChrome());
+        wnd.Show();
+        wnd.Viewport = view;
+        wnd.Width = 500;
+        wnd.Height = 500;
+        
+        wnd._Render(1000);
+        
+        //w._Render(true, canvas, 0, 0, 0, 0, 400, 400, 10000);
+        
+        
+        
         
         
         </script>

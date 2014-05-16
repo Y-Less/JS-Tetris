@@ -6,6 +6,8 @@
 
 function InterfaceException(that, func, args)
 {
+    "use strict";
+    
     this.that = that;
     this.func = func;
     this.arguments = args;
@@ -16,6 +18,8 @@ function InterfaceException(that, func, args)
 
 function MixinException(obj)
 {
+    "use strict";
+    
     this.that = obj;
     this.message = 'Array given for mixin - property names are required.';
     this.name = 'MixinException';
@@ -24,6 +28,8 @@ function MixinException(obj)
 
 function RequiresException(obj, func)
 {
+    "use strict";
+    
     this.that = obj;
     this.func = func;
     this.message = 'Function "' + func + '" required but not found.';
@@ -33,6 +39,8 @@ function RequiresException(obj, func)
 
 function DefinePropertyException(obj, prop, desc)
 {
+    "use strict";
+    
     this.that = obj;
     this.descriptor = desc;
     this.message = 'Unable to call "DefineProperty" on "' + prop + '" with .get or .set.';
@@ -42,60 +50,13 @@ function DefinePropertyException(obj, prop, desc)
 
 var InterfaceBase = (function ()
 {
+    "use strict";
+    
     /*
         An object that copies a parent's prototype chain so that we can create
         a new instance of the parent without calling the parent's constructor.
     */
     function InterfaceSurrogate() {}
-    
-    Object.inherit = function (base, sub, methods)
-        {
-            if (base instanceof Object && sub instanceof Object)
-            {
-                InterfaceSurrogate.prototype = base.prototype;
-                sub.prototype = new InterfaceSurrogate();
-                
-                // Add a reference to the parent's prototype
-                sub.base = base.prototype;
-                
-                // Copy the methods passed in to the prototype
-                for (var name in (methods || {}))
-                {
-                    sub.prototype[name] = methods[name];
-                }
-                
-                // Copy the constructor correctly.
-                Object.defineProperty(sub.prototype, 'constructor', { 
-                    // Defaults, but explicit anyway.
-                    configurable: false,
-                    enumerable: false,
-                    writable: false,
-                    value: sub
-                });
-                
-                // Copy the constructor correctly.
-                Object.defineProperty(sub.prototype, 'base', { 
-                    configurable: false,
-                    enumerable: false,
-                    writable: false,
-                    value: base.prototype
-                });
-                
-                // Define "$super" as a super constructor call.
-                Object.defineProperty(sub.prototype, 'super', { 
-                    configurable: false,
-                    enumerable: false,
-                    writable: false,
-                    value: function ()
-                        {
-                            this.base.constructor.apply(this, arguments);
-                        }
-                });
-                
-                // So we can define the constructor inline.
-                return sub;
-            }
-        };
     
     /*
         This is a wrapper for "Object.defineProperty", in case it doesn't exist.
@@ -133,6 +94,92 @@ var InterfaceBase = (function ()
         for (var i in obj) if (obj.hasOwnProperty(i)) ret.push(i);
         return ret;
     };
+    
+    Object.inherit = function (_sub, base, methods)
+        {
+            var sub;
+            if (_sub instanceof Function) sub = _sub;
+            else if (_sub instanceof Object)
+            {
+                sub = function () { this.super.apply(this, arguments); return this; }
+                for (var i in _sub) sub.prototype[i] = _sub[i];
+            }
+            if (base instanceof Function && sub instanceof Function)
+            {
+                InterfaceSurrogate.prototype = base.prototype;
+                sub.prototype = new InterfaceSurrogate();
+                
+                // Add a reference to the parent's prototype
+                sub.base = base.prototype;
+                
+                // Copy the methods passed in to the prototype
+                for (var name in (methods || {}))
+                {
+                    sub.prototype[name] = methods[name];
+                }
+                
+                // Copy the constructor correctly.
+                DefineProperty(sub.prototype, 'constructor', { 
+                    // Defaults, but explicit anyway.
+                    configurable: false,
+                    enumerable: false,
+                    writable: false,
+                    value: sub
+                });
+                
+                // Copy the constructor correctly.
+                DefineProperty(sub.prototype, 'object', { 
+                    // Defaults, but explicit anyway.
+                    configurable: true,
+                    enumerable: false,
+                    writable: false,
+                    value: sub
+                });
+                
+                // Copy the constructor correctly.
+                DefineProperty(sub.prototype, 'base', { 
+                    configurable: true,
+                    enumerable: false,
+                    writable: false,
+                    value: base.prototype
+                });
+                
+                // Define "$super" as a super constructor call.
+                DefineProperty(sub.prototype, 'super', { 
+                    configurable: false,
+                    enumerable: false,
+                    writable: false,
+                    value: function ()
+                        {
+                            // "this.object" is a copy of "this.constructor",
+                            // because you can't delete that property.
+                            var cons = this.object;
+                            var was = this.base;
+                            // Remove the immediate parent, so that repeated
+                            // calls to this function don't get stuck in an
+                            // infinite loop.
+                            delete cons.prototype.object;
+                            delete cons.prototype.base;
+                            was.constructor.apply(this, arguments);
+                            DefineProperty(cons.prototype, 'object', { 
+                                configurable: true,
+                                enumerable: false,
+                                writable: false,
+                                value: cons
+                            });
+                            DefineProperty(cons.prototype, 'base', { 
+                                configurable: true,
+                                enumerable: false,
+                                writable: false,
+                                value: was
+                            });
+                        }
+                });
+                
+                // So we can define the constructor inline.
+                return sub;
+            }
+        };
     
     /*
         The function defined on a prototype chain to be called when the function
@@ -374,6 +421,8 @@ var InterfaceBase = (function ()
 
 function Interface(obj, spec)
 {
+    "use strict";
+    
     if (spec)
     {
         Object.specify(obj, new InterfaceBase(spec, 0, 0));
@@ -384,8 +433,10 @@ function Interface(obj, spec)
     }
 }
 
-function Contract()
+function Contract(obj, spec)
 {
+    "use strict";
+    
     if (spec)
     {
         Object.specify(obj, new InterfaceBase(0, spec, 0));
@@ -396,8 +447,10 @@ function Contract()
     }
 }
 
-function Mixin()
+function Mixin(obj, spec)
 {
+    "use strict";
+    
     if (spec)
     {
         Object.specify(obj, new InterfaceBase(0, 0, spec));
@@ -406,5 +459,14 @@ function Mixin()
     {
         return new InterfaceBase(0, 0, obj);
     }
+}
+
+function Inherit(obj, base)
+{
+    "use strict";
+    return Object.inherit(obj, base);
+    //var ret = new InterfaceBase(0, 0, 0);
+    //Object.spe
+    // return obj;
 }
 

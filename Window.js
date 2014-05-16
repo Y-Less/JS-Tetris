@@ -5,8 +5,13 @@ Window = function ()
 
 function Widget(_parent, _x, _y)
 {
+    "use strict";
+    
     var MIN = Math.min;
     var MAX = Math.max;
+    
+    // VERY simple - is this widget to be shown WHEN IT'S PARENT IS?
+    var _shown = true;
     
     // True when the image has shifted, but not been altered.
     var _moved = true;
@@ -30,6 +35,11 @@ function Widget(_parent, _x, _y)
     
     var _width  = 0;
     var _height = 0;
+    
+    // Dirty previously hidden widgets.
+    this.Show = function () { _dirty = _dirty || !_shown; _shown = true; }
+    this.Hide = function () { _shown = hide; }
+    this.IsShown = function () { return _shown; }
     
     Object.defineProperty(this, 'X', {
             configurable: false,
@@ -109,6 +119,7 @@ function Widget(_parent, _x, _y)
     */
     this._Render = function (ctx, x, y, bl, bt, br, bb, time, force)
     {
+        if (!_shown) return false;
         // Get the theoretical start location of this element.
         x += _x;
         y += _y;
@@ -120,7 +131,7 @@ function Widget(_parent, _x, _y)
         var nbb = MIN(bb, y + _height);
         // Find out if this is entirely outside the bounding rect.  If it is,
         // the new bounding box will be invalid.
-        if (nbl >= nbr || nbt >= nbb) return;
+        if (nbl >= nbr || nbt >= nbb) return false;
         // The "||" is NOT in the wrong place here.  We save the result and
         // check it.  Also force rendering if the widget is dirty.
         var moved = _moved;

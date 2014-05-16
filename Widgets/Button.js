@@ -19,7 +19,7 @@ function Button(_parent, _x, _y)
         }
     };
     
-    this.On = function (what, event)
+    this.On = function (what, x, y, event)
     {
         // Need mouse-out events to cancel a click.
         switch (what)
@@ -39,7 +39,11 @@ function Button(_parent, _x, _y)
                     this.Click(event);
                 }
                 break;
+            case 'click':
+                console.log('x: ' + x + ', y: ' + y);
+                break;
         }
+        return true;
     };
     
     this.super(_parent, _x, _y);
