@@ -250,25 +250,16 @@ function Widget(x, y)
         // the new bounding box will be invalid.
         if (nbl >= nbr || nbt >= nbb) return false;
         // Check if we need to change any of the sizes.
-        var dirty = this.IsDirty();
-        if (force || dirty)
+        if (this.IsDirty())
         {
             _ctx.width  = _canvas.width  = width;
             _ctx.height = _canvas.height = height;
+            this.ResetDirty();
+            this.Render(_ctx, time);
         }
-        // The "||" is NOT in the wrong place here.  We save the result and
-        // check it.  Also force rendering if the widget is dirty.
-        var moved = this.HasMoved();
-        // In case "Render" adjusts them.
-        this.ResetDirty();
-        if ((force = this.Render(_ctx, time, dirty) || moved || force))
-        {
-            // Draw the canvas within our bounding rectangle.
-            ctx.drawImage(_canvas, nbl - x, nbt - y, nbr - nbl, nbb - nbt, nbl, nbt, nbr - nbl, nbb - nbt);
-        }
-        force = _children.FoldL('_Render', force, [ctx, x, y, width, height, nbl, nbt, nbr, nbb, time]);
-        // Is this view dirty?
-        return force;
+        // Redrew the contents, replace it on the parent.
+        ctx.drawImage(_canvas, nbl - x, nbt - y, nbr - nbl, nbb - nbt, nbl, nbt, nbr - nbl, nbb - nbt);
+        _children.Map('_Render', [ctx, x, y, width, height, nbl, nbt, nbr, nbb, time]);
     };
     
     this.AddWidget = function (child)

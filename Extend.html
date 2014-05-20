@@ -158,9 +158,9 @@
             
             this.super(_x, _y);
             
-            this.Render = function (ctx, time, force)
+            this.Render = function (ctx, time) //, force)
             {
-                if (_last(time) || force) // Order is important.
+                //if (_last(time) || force) // Order is important.
                 {
                     var gradient = ctx.createLinearGradient(0, 0, ctx.width, 0);
                     // Add the colors with fixed stops at 1/4 of the width.
@@ -263,9 +263,9 @@
             {
                 this.super(x, y);
                 
-                this.RenderChrome = function (ctx, time, force)
+                this.RenderChrome = function (ctx, time) //, force)
                 {
-                    if (force)
+                    //if (force)
                     {
                         var w = ctx.width;
                         var h = ctx.height;

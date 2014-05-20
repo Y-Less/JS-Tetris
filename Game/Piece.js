@@ -22,14 +22,6 @@ function Piece(_shape)
     }
     this.Colour = BLOCK_COLOURS[this.CC];
     
-    /*for (var i in _shape)
-    {
-        var c = _shape[i];
-        for (var j in c)
-        {
-        }
-    }*/
-    
     // Each piece has 4 parts, but no reason that can't change.
     var _len = this.Parts.length;
     
@@ -39,7 +31,6 @@ function Piece(_shape)
         var tmp;
         this.A = (this.A + dir + 4) % 4; // JS mod is signed.
         while (dir > 0)
-        //if (dir > 0)
         {
             for (var i in parts)
             {
@@ -50,7 +41,6 @@ function Piece(_shape)
             --dir;
         }
         while (dir < 0)
-        //else
         {
             for (var i in parts)
             {
@@ -88,21 +78,6 @@ function Piece(_shape)
             }
         }
     };
-	
-	// this.RotateRight()
-	// {
-		// for (var i = 0; i != len; ++i)
-		// {
-			// if ((shapeX[i] >= 2) == (shapeY[i] >= 2))
-			// {
-				// shapeX[i] = 3 - shapeX[i];
-			// }
-			// else
-			// {
-				// shapeY[i] = 3 - shapeY[i];
-			// }
-		// }
-	// };
 }
 
 

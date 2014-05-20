@@ -1,0 +1,136 @@
+<html>
+	<head>
+		<script type="text/javascript">
+			function regexEscape(s)
+			{
+				return s.replace(/([.*+?^$|(){}\[\]\\])/g, "\\$1");
+			}
+			
+			function searchEscape(s, n)
+			{
+				if (s == '\\') s = n;
+				return s.replace(/([\[\]\\])/, '\\$1');
+			}
+			
+			function replaceEscape(s)
+			{
+				return s.replace(/\$/g, '$$$$');
+			}
+			
+			// Split the input up in to three parts - name, search, replacement.
+			var defPattern = new RegExp('^\\s*([A-Za-z0-9_$]+)(\\S*)($|\\s+(.*)$)');
+			// Extract "%n" parts from the search and replace patterns.
+			var repPattern = new RegExp('(^|[^%])(%%)*%([0-9])', 'g');
+            
+            var charEnding = new RegExp('[A-Za-z0-9_$]$');
+			
+			function buildSearchReplace(str)
+			{
+				// There are three parts to the define pattern - the name, the search
+				// pattern, and the replacement pattern.
+				// The first part uses [A-Za-z0-9_$] not \w because "$" is a valid JS
+				// identifier character that is NOT covered by "\w".
+				var def = str.match(defPattern);
+				if (!def) return;
+				// "def" = name: def[1], search: def[1] + def[2], replace: def[4] || ''.
+				var search = regexEscape(def[1] + def[2]);
+				var pos = 0;
+				// Where the replacement gets the input from.
+				var replacePos = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+				// Build the search regex.
+				var ns = '';
+				var repnum = 2;
+				while ((pos = search.search(repPattern)) != -1)
+				{
+					ns = ns.concat(search.substr(0, pos));
+					while (pos < search.length)
+					{
+						if (search.charAt(pos) == '%')
+						{
+							if (search.charAt(pos + 1) == '%')
+							{
+								ns = ns.concat('%');
+								pos += 2;
+							}
+							else
+							{
+								ns = ns.concat('([^' + searchEscape(search.charAt(pos + 2), search.charAt(pos + 3)) + ']*)');
+								replacePos[0 + search.charAt(pos + 1)] = repnum++;
+								break;
+							}
+						}
+						else ns = ns.concat(search.charAt(pos++));
+					}
+					search = search.substr(pos + 2);
+				}
+                ns = ns.concat(search);
+                search = charEnding.test(ns);
+                ns = '(^|[^A-Za-z0-9_$])' + ns + (search ? '(\\W|$)' : '');
+				// Build the replacement pattern.
+				var replace = replaceEscape(def[4] || '');
+				var nr = '';
+				while ((pos = replace.search(repPattern)) != -1)
+				{
+					nr = nr.concat(replace.substr(0, pos));
+					while (pos < replace.length)
+					{
+						if (replace.charAt(pos) == '%')
+						{
+							if (replace.charAt(pos + 1) == '%')
+							{
+								nr = nr.concat('%');
+								pos += 2;
+							}
+							else
+							{
+								nr = nr.concat('$' + replacePos[0 + replace.charAt(pos + 1)]);
+								break;
+							}
+						}
+						//else ++pos;
+						else nr = nr.concat(replace.charAt(pos++));
+					}
+					replace = replace.substr(pos + 2);
+				}
+				nr = '$1' + nr.concat(replace) + (search ? ('$' + repnum) : '');
+				// /(%[0-9])/g
+				//return [name, search, replace];
+				return [def[1], ns, nr];
+			}
+		</script>
+	</head>
+		<div id="hi">
+		</div>
+		<script type="text/javascript">
+			var hi = document.getElementById('hi');
+			
+			function f(s)
+			{
+				var r = buildSearchReplace(s);
+				console.log(r);
+				if (r)
+				{
+				hi.innerHTML += 
+					'Name: '    + r[0] + '<br />' +
+					'Search: '  + r[1] + '<br />' +
+					'Replace: ' + r[2] + '<br />' +
+					'';
+				}
+				else alert('no');
+			}
+			
+			f('   hello');
+			f('   ');
+			f('hello');
+			f('hello');
+			f('hello(you)');
+			f('hello you');
+			f('hello$you');
+			f('hello$$ $$you');
+			f('hello(%0) $%0$');
+			f('hello(%0,%0,%0) %0');
+		</script>
+	<body>
+	</body>
+</html>
+
