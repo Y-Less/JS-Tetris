@@ -1,0 +1,42 @@
+#pragma once
+
+#define ICON_SIZE 50
+
+#include "Widget.ys"
+
+Icon = function (image, _name, _game, x, y)
+{
+    this.super(x, y);
+    
+    var _img = document.createElement('img');
+    document.body.appendChild(_img);
+    _img.style.display = 'none';
+    _img.src = image;
+    
+    this.Width = ICON_SIZE + 10;
+    this.Height = ICON_SIZE + 20;
+    
+    this.Render = function (ctx, time)
+    {
+        ctx.drawImage(_img, 5, 0, ICON_SIZE, ICON_SIZE);
+        ctx.font = '15pt Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(_name, (ICON_SIZE + 10) / 2, ICON_SIZE);
+        return true;
+    };
+    
+    this.On = function (what)
+    {
+        if (what == 'dblclick')
+        {
+            _game.Open();
+            //alert('click: ' + _name);
+        }
+    };
+    
+    this.RegisterAction('dblclick');
+}
+
+Inherit(Icon, Widget);
+

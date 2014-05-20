@@ -1,61 +1,9 @@
-function Button(_parent, _x, _y)
-{
-    var _down = false;
-    var _highlight
-    
-    this.Render = function (ctx, time, force)
-    {
-        console.log('render');
-        if (force)
-        {
-            if (_down)
-            {
-                this.RenderDown(ctx, time);
-            }
-            else
-            {
-                this.RenderUp(ctx, time);
-            }
-        }
-    };
-    
-    this.On = function (what, x, y, event)
-    {
-        // Need mouse-out events to cancel a click.
-        switch (what)
-        {
-            /*case 'mousedown':
-                if (!_down)
-                {
-                    _down = true;
-                    this.Dirty();
-                }
-                break;
-            case 'mouseup':
-                if (_down)
-                {
-                    _down = false;
-                    this.Dirty();
-                    this.Click(event);
-                }
-                break;*/
-            case 'click':
-                console.log('x: ' + x + ', y: ' + y);
-                break;
-        }
-        return true;
-    };
-    
-    this.super(_parent, _x, _y);
-    return this;
-}
+#pragma once
 
-Inherit(Button, Widget);
-// Object.specify(Button, new Interface(['RenderDown', 'RenderUp', 'Click']));
-Interface(Button, ['RenderDown', 'RenderUp', 'Click']);
+#include "Button.ys"
+#include "Window.ys"
 
-
-var GreyButton3D = Inherit(function (parent, x, y)
+GreyButton3D = Inherit(function (parent, x, y)
     {
         this.super(parent, x, y);
         this.RenderDown = function (ctx, time)
@@ -113,4 +61,50 @@ var GreyButton3D = Inherit(function (parent, x, y)
         this.Width = 100;
         this.Height = 40;
     }, Button);
+
+
+BoringWindow = Inherit(function (x, y)
+    {
+        this.super(x, y);
+        
+        this.RenderChrome = function (ctx, time)
+        {
+            var w = ctx.width;
+            var h = ctx.height;
+            ctx.fillStyle = 'lightgray';
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            ctx.moveTo(w - 1, 1);
+            ctx.lineTo(w - 1, h - 1);
+            ctx.lineTo(1, h - 1);
+            ctx.moveTo(2, h - 2);
+            ctx.lineTo(w - 2, h - 2);
+            ctx.lineTo(w - 2, 2);
+            ctx.stroke();
+            
+            ctx.strokeStyle = 'white';
+            ctx.beginPath();
+            ctx.moveTo(w - 1, 0);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(0, h - 1);
+            ctx.moveTo(1, h - 2);
+            ctx.lineTo(1, 1);
+            ctx.lineTo(w - 2, 1);
+            ctx.stroke();
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(5, 35, w - 10, h - 40);
+            
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(5, 5, w - 10, 27);
+            return true;
+        };
+        
+        this.GetViewport = function (w, h)
+        {
+            return {l: 5, t: 35, r: w - 5, b: h - 5};
+        };
+    }, Window);
 

@@ -1,0 +1,162 @@
+#include "Base.ys"
+
+#pragma once
+
+Placeable = function (_x, _y)
+{
+    "use strict";
+    
+    // VERY simple - is this widget to be shown WHEN IT'S PARENT IS?
+    var _shown = true;
+    
+    // True when the image has shifted, but not been altered.
+    var _moved = true;
+    
+    // True when the image has been changed.
+    var _dirty = true;
+    // Both these are true by default to show the thing initially.
+    
+    var _width  = 0;
+    var _height = 0;
+    
+    var _align = 0;
+    
+    // Dirty previously hidden widgets.
+    this.Show = function () { _dirty = _dirty || !_shown; _shown = true; }
+    this.Hide = function () { _shown = false; }
+    this.Moved = function () { _moved = true; }
+    this.Dirty = function () { _dirty = true; }
+    this.IsShown = function () { return _shown; }
+    this.HasMoved = function () { return _moved; }
+    this.IsDirty = function () { return _dirty; }
+    this.ResetDirty = function () { _dirty = false; _moved = false; }
+    
+    Object.defineProperty(this, 'X', {
+            configurable: false,
+            enumerable: true,
+            set: function (v)
+            {
+                if (v == _x) return;
+                _moved = true;
+                return (_x = v);
+            },
+            get: function () { return _x; }
+        });
+    
+    Object.defineProperty(this, 'Y', {
+            configurable: false,
+            enumerable: true,
+            set: function (v)
+            {
+                if (v == _y) return;
+                _moved = true;
+                return (_y = v);
+            },
+            get: function () { return _y; }
+        });
+    
+    // Accessors for changing the object's size.
+    Object.defineProperty(this, 'Width', {
+            configurable: false,
+            enumerable: true,
+            set: function (v)
+            {
+                if (v == _width) return;
+                if (v <= 0) return; // Invalid size.
+                if (this['OnResize'] instanceof Function) this.OnResize(v, _height);
+                _dirty = true;
+                return (_width = v);
+            },
+            get: function () { return _width; }
+        });
+    Object.defineProperty(this, 'Height', {
+            configurable: false,
+            enumerable: true,
+            set: function (v)
+            {
+                if (v == _height) return;
+                if (v <= 0) return; // Invalid size.
+                if (this['OnResize'] instanceof Function) this.OnResize(_width, v);
+                _dirty = true;
+                return (_height = v);
+            },
+            get: function () { return _height; }
+        });
+    
+    Object.defineProperty(this, 'Align', {
+            configurable: false,
+            enumerable: true,
+            set: function (align)
+            {
+                var v;
+                switch (align)
+                {
+                    case 'left'  : v = 0; break;
+                    case 'center': v = 1; break;
+                    case 'right' : v = 2; break;
+                    default: return;
+                }
+                if (v == _align) return;
+                _moved = true;
+                return (_align = v);
+            },
+            get: function ()
+            {
+                switch (_align)
+                {
+                    case 0: return 'left';
+                    case 1: return 'center';
+                    case 2: return 'right';
+                }
+            }
+        });
+    
+    this.AlignNum = function ()
+    {
+        return _align;
+    };
+    
+    return this;
+}
+
+Drag = (function ()
+    {
+        var _what;
+        var _ex;
+        var _ey;
+        var _ox;
+        var _oy;
+        
+        
+        return {
+                Start: function (what, event)
+                {
+                    if (what instanceof Placeable && !_what)
+                    {
+                        _what = what;
+                        _ex = event.pageX;
+                        _ey = event.pageY;
+                        _ox = what.X;
+                        _oy = what.Y;
+                    }
+                },
+                
+                End: function (what)
+                {
+                    _what = 0;
+                },
+                
+                Move: function (event)
+                {
+                    if (_what)
+                    {
+                        _what.X = _ox + (event.pageX - _ex);
+                        _what.Y = _oy + (event.pageY - _ey);
+                    }
+                }
+            };
+    })();
+
+document.body.addEventListener('mousemove', Drag.Move, false);
+document.body.addEventListener('mouseup', Drag.End, false);
+

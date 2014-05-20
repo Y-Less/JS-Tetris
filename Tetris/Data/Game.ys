@@ -1,0 +1,106 @@
+#pragma once
+
+#include "../Pieces.ys"
+
+TetrisGameData = function ()
+{
+    var _rows = TETRIS_GRID_ROWS;
+    var _cols = TETRIS_GRID_COLS;
+    
+    //var _grid = [];
+    this.Grid = []
+    var _onerow = [];
+    for (var j = 0; j != _cols; ++j) _onerow.push(-1);
+    for (var i = 0; i != _rows; ++i) this.Grid.push(_onerow.slice(0));
+    
+    this.Stores = [];
+    this.Saved = NO_PIECE;
+    
+    var _futurePieces = 4;
+    
+    function CreatePiece()
+    {
+        return new TetrisPiece(BLOCK_SHAPES[(Math.random() * BLOCK_COUNT) | 0]);
+    };
+    
+    this.NewPiece = function ()
+    {
+        this.Stores.push(CreatePiece());
+    };
+    
+    for (var i = 0; i != _futurePieces; ++i)
+    {
+        this.NewPiece();
+    }
+    
+    this.Speed = 1000;
+    //this.Saved;
+    this.Piece = CreatePiece();
+    this.Piece.X = 2;
+    this.Piece.Y = -4;
+    //this.Saved = CreatePiece();
+    var _paused = false;
+    this.Destroyed = 0;
+    
+    var _noRepeat = true;
+    
+    this.Shuffle = function ()
+    {
+        var parts = this.Piece.Parts;
+        var c = this.Piece.CC;
+        var x = this.Piece.X;
+        var y = this.Piece.Y;
+        var check;
+        for (var i in parts)
+        {
+            if ((check = y + parts[i].y) < 0) return true;
+            this.Grid[check][x + parts[i].x] = c;
+        }
+        this.Stores.push(CreatePiece());
+        this.Piece = this.Stores.shift();
+        this.Piece.X = 2;
+        this.Piece.Y = -4;
+        this.DropSpeed = this.Speed;
+        return false;
+    };
+    
+    this.Collide = function (piece)
+    {
+        var parts = piece.Parts;
+        for (var i in parts)
+        {
+            var x = parts[i].x + piece.X;
+            var y = parts[i].y + piece.Y;
+            if (x < 0 || x >= _cols || y >= _rows) return true;
+            // Account for when the piece is off the top of the screen.
+            if (y >= 0 && this.Grid[y][x] >= 0) return true;
+        }
+        return false;
+    };
+    
+    function RowComplete(row)
+    {
+        //var row = _grid[r];
+        for (var j = 0; j != _cols; ++j) if (row[j] < 0) return false;
+        return true;
+    }
+    
+    this.DestroyRows = function ()
+    {
+        var removed = [];
+        var rem = 0;
+        for (var i = 0; i != _rows; ++i)
+        {
+            if (RowComplete(this.Grid[rem]))
+            {
+                this.Grid.splice(rem, 1);
+                removed.push(i);
+            }
+            else ++rem;
+        }
+        for ( ; rem < _rows; ++rem) this.Grid.splice(0, 0, _onerow.slice(0));
+        return removed;
+    }
+};
+
+

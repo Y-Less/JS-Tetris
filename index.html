@@ -1,89 +1,67 @@
 <html>
-	<head>
-		<title>Tetris, by Y_Less.</title>
+    <head>
         <style type="text/css">
-            
             *
             {
                 border: 0;
                 margin: 0;
                 padding: 0;
                 overflow: hidden;
-            }
-            
-            body
-            {
-                width: 100%;
-                height: 100%;
-            }
-            
-            canvas, .canvas_container
-            {
-                display: block;
-                position: absolute;
-                visibility: shown;
-            }
-            
-            *
-            {
                 -moz-user-select: none;
                 -webkit-user-select: none;
                 -ms-user-select:none;
                 user-select:none;
             }
             
+            .view_container > *, #container
+            {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            
+            .view_container > div
+            {
+                z-index: 3;
+                width: 100%;
+                height: 100%;
+            }
+            
+            #container
+            {
+                width: 100%;
+                height: 100%;
+            }
+            
+            .view_container
+            {
+                position: absolute;
+                display: none;
+            }
         </style>
-	</head>
-	<body>
-        <!-- <canvas id="tetrisSurface"></canvas> -->
-		<!-- <script type="text/javascript" src="Tetris.js"></script> -->
-		<script type="text/javascript" src="Utils.js"></script>
-		<script type="text/javascript" src="States.js"></script>
-		<script type="text/javascript" src="View.js"></script>
-		<script type="text/javascript" src="Controller.js"></script>
-		<script type="text/javascript">
         
-        var BLOCK_SIZE = 30;
+        <title>Games By Y_Less</title>
+    </head>
+    <body>
+        <div id="container">
+        </div>
+		<img src="Icons/Tetris.png" style="display: none;" />
+        <script type="text/yavascript">
         
-        var STATE_SPLASH   = 'SplashScreen';
-        var STATE_CONTINUE = 'ContinueScreen';
-        var STATE_MENU     = 'Menu';
-        var STATE_CREDITS  = 'Credits';
-        var STATE_OPTIONS  = 'Options';
-        var STATE_SCORES   = 'HighScores';
-        var STATE_NEW      = 'NewGame';
-        var STATE_GAME     = 'Game';
-        var STATE_PAUSE    = 'Pause';
-        var STATE_QUIT     = 'Quit';
-        var STATE_OVER     = 'GameOver';
-        var STATE_HIGH     = 'HighScore';
-        var STATE_INDUCTED = 'Inducted';
+        #include "Background/Wallpaper.ys"
+        #include "Tetris/Tetris.ys"
+        #include "Widgets/Icon.ys"
+        #include "Utils/Container.ys"
         
-        var StateMachine = new StateHandler(STATE_SPLASH);
-        //var StateMachine = new StateHandler(STATE_GAME);
+        Updates = new Container(StateMachine);
         
-        </script>
-        <!-- Views -->
-		<script type="text/javascript" src="Background/Controller.js"></script>
-		<script type="text/javascript" src="Background/View.js"></script>
-		<script type="text/javascript" src="Menu/Controller.js"></script>
-		<script type="text/javascript" src="Menu/View.js"></script>
-		<script type="text/javascript" src="Game/Piece.js"></script>
-		<script type="text/javascript" src="Game/Controller.js"></script>
-		<script type="text/javascript" src="Game/View.js"></script>
-		<!-- <script type="text/javascript" src="Menu/View.js"></script> -->
-        <script type="text/javascript">
+        Screen = new Wallpaper();
         
-        var Test = function (y)
-        {
-            var _x = y;
-            Object.defineProperty(this, "x", {
-                    get: function () { return _x; },
-                    set: ReadOnly('x'),
-                });
-            return this;
-        }
-        var T2 = new Test(88);
+        Screen.AddChild(Tetris.Window);
+		
+        Desktop = Screen.Viewport;
+        
+        Desktop.AddWidget(new Icon('Icons/Tetris.png', 'Tetris', Tetris, 100, 100));
         
         window.requestAnimFrame = (function ()
             {
@@ -96,61 +74,37 @@
                     };
             })();
         
-        window.onload = function()
+        (function ()
         {
-            /*var GLOBAL_CANVAS  = document.getElementById('tetrisSurface');
-            var GLOBAL_CONTEXT = GLOBAL_CANVAS.getContext('2d');*/
+            var _lastRender = Date.now();
+            var _lastUpdate = Date.now();
             
-            StateMachine.Start();
-            var Screen = Background.View;
+            Screen.Show();
             
-            function ResizeCanvas()
+            function AnimLoop()
             {
-                Screen.Resize();
+                requestAnimFrame(AnimLoop);
+                var last = _lastRender;
+                _lastRender = Date.now();
+                Screen._Render(_lastRender - last);
             }
             
-            window.addEventListener('resize', ResizeCanvas, false);
-            //ResizeCanvas();
-            
-            //Background.Init();
-            //Background.Show();
-            //Menu.View.Show();
-            
-            (function ()
+            function UpdateLoop()
             {
-                var _lastRender = Date.now();
-                var _lastUpdate = Date.now();
-                
-                function AnimLoop()
-                {
-                    requestAnimFrame(AnimLoop);
-                    var last = _lastRender;
-                    _lastRender = Date.now();
-                    Screen._Render(_lastRender - last);
-                }
-                
-                function UpdateLoop()
-                {
-                    var last = _lastUpdate;
-                    _lastUpdate = Date.now();
-                    //Background.View.Update(_lastUpdate - last);
-                    StateMachine.Update(_lastUpdate - last);
-                }
-                
-                AnimLoop();
-                window.setInterval(UpdateLoop, 50);
-            })();
+                window.setTimeout(UpdateLoop, 50);
+                var last = _lastUpdate;
+                _lastUpdate = Date.now();
+                Updates.Map('Update', [_lastUpdate - last]);
+            }
             
-            //StateMachine.
-            
-            //Background._Render(100);
-            
-            //window.setInterval(function () { Background._Render(100); }, 1000);
-            
-        };
+            AnimLoop();
+            UpdateLoop();
+        })();
+        
+        
         
         </script>
-	</body>
+		<script type="text/javascript" src="yavascript.js"></script>
+    </body>
 </html>
-
 

@@ -1,0 +1,94 @@
+#pragma once
+
+#include "../../Widgets/Widget.ys"
+#include "../../Widgets/TextDraw.ys"
+#include "../../Widgets/KeyPress.ys"
+
+
+
+
+
+
+
+
+
+
+
+
+(function ()
+{
+    function CreateView()
+    {
+        var _width = TETRIS_LOGO[0].length;
+        var _height = TETRIS_LOGO.length;
+        
+        var _view = new Viewport();
+        
+        _view.AddWidget(new (Inherit(function ()
+            {
+                this.super(0, TETRIS_BLOCK_SIZE);
+                
+                this.Height = _height * TETRIS_BLOCK_SIZE;
+                this.Width = _width * TETRIS_BLOCK_SIZE;
+                this.Align = 'center';
+                
+                this.Render = function (ctx, time)
+                {
+                    DrawTetrisLogo(ctx, 0, 0);
+                    return true;
+                };
+            }, Widget))());
+        
+        var tmp = new TextDraw('Press Any Key To Continue', TETRIS_BLOCK_SIZE * 7, 'center')
+        tmp.Height = TETRIS_BLOCK_SIZE;
+        tmp.Width = _width * TETRIS_BLOCK_SIZE;
+        _view.AddWidget(tmp);
+        
+        _view.RegisterAction('click');
+        _view.RegisterAction('keypress');
+        _view.Action['keypress'] = 'Continue';
+        _view.Action['click'] = 'Continue';
+        
+        _view.Attach = function ()
+        {
+            Tetris.Window.SetSize(_width + 2, _height + 6);
+            Tetris.Window.Viewport = _view;
+        };
+        
+        return _view;
+    };
+    
+    
+    
+    
+    Tetris.Add(TETRIS_STATE_SPLASH, new (function ()
+        {
+            var _view = CreateView();
+            
+            _view.Listeners.Add(this);
+            
+            this.Fire = function (what)
+            {
+                switch (what)
+                {
+                    case 'Continue':
+                        this.Transition(TETRIS_STATE_MENU);
+                }
+            }
+            
+            this.Entry = function (from)
+            {
+                _view.Attach();
+            };
+            
+            this.Exit = function (to)
+            {
+            };
+            
+            this.Update = function (time)
+            {
+            };
+        })());
+})();
+
+

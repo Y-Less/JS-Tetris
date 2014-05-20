@@ -1,4 +1,8 @@
-function Container(contents, _ordered)
+#pragma once
+
+#include "Container.ys"
+
+Container = function (contents, _ordered)
 {
     "use strict";
     
@@ -17,9 +21,14 @@ function Container(contents, _ordered)
     var _children = [];
     var _len = 0;
     
+    this.GetChildren = function ()
+    {
+        return _children;
+    };
+    
     this.Add = function (child)
     {
-        if (child instanceof contents)
+        if (!contents || child instanceof contents)
         {
             if (_ordered)
             {
@@ -104,7 +113,9 @@ function Container(contents, _ordered)
     
     this.FoldL = function (func, initial, args)
     {
+        // console.log('len: ' + args.length);
         args.splice(0, 0, initial);
+        // console.log('len: ' + args.length);
         for (var i = 0; i != _len; ++i)
         {
             if (_children[i][func] instanceof Function)

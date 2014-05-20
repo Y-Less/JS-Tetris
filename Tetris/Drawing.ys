@@ -1,0 +1,75 @@
+#pragma once
+
+DrawBlock = function (ctx, x, y, colour, a)
+{
+    if (a === undefined)
+    {
+        ctx.strokeStyle = 'rgb(' + (colour.r + 40) + ', ' + (colour.g + 40) + ', ' + (colour.b + 40) + ')';
+        ctx.strokeRect(x, y, TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE);
+        ctx.strokeStyle = 'rgb(' + (colour.r + 20) + ', ' + (colour.g + 20) + ', ' + (colour.b + 20) + ')';
+        ctx.strokeRect(x + 1, y + 1, TETRIS_BLOCK_SIZE - 2, TETRIS_BLOCK_SIZE - 2);
+        ctx.fillStyle = 'rgb(' + colour.r + ', ' + colour.g + ', ' + colour.b + ')';
+        ctx.fillRect(x + 2, y + 2, TETRIS_BLOCK_SIZE - 4, TETRIS_BLOCK_SIZE - 4);
+    }
+    else
+    {
+        ctx.strokeStyle = 'rgba(' + (colour.r + 40) + ', ' + (colour.g + 40) + ', ' + (colour.b + 40) + ', ' + a + ')';
+        ctx.strokeRect(x, y, TETRIS_BLOCK_SIZE, TETRIS_BLOCK_SIZE);
+        ctx.strokeStyle = 'rgba(' + (colour.r + 20) + ', ' + (colour.g + 20) + ', ' + (colour.b + 20) + ', ' + a + ')';
+        ctx.strokeRect(x + 1, y + 1, TETRIS_BLOCK_SIZE - 2, TETRIS_BLOCK_SIZE - 2);
+        ctx.fillStyle = 'rgba(' + colour.r + ', ' + colour.g + ', ' + colour.b + ', ' + a + ')';
+        ctx.fillRect(x + 2, y + 2, TETRIS_BLOCK_SIZE - 4, TETRIS_BLOCK_SIZE - 4);
+    }
+}
+
+// TODO: Better colours.
+BLOCK_COLOURS = [
+        {r:   0, g: 100, b:   0},
+        {r:   0, g:   0, b: 100},
+        {r:   0, g: 100, b: 100},
+        {r: 100, g:   0, b:   0},
+        {r: 100, g:   0, b: 100},
+        {r: 100, g: 100, b:   0},
+        {r: 100, g: 100, b: 100},
+    ];
+
+BLOCK_RGB = BLOCK_COLOURS.map(function (colour)
+    {
+        return 'rgb(' + colour.r + ', ' + colour.g + ', ' + colour.b + ')';
+    });
+
+BLOCK_SHAPES = [
+        "     00  00     ", // O
+        "  1   1   1   1 ", // I
+        "     22   2   2 ", // J
+        "     33  3   3  ", // L
+        "      4  44  4  ", // Z
+        "     5   55   5 ", // S
+        "      6  66   6 ", // T
+    ];
+
+BLOCK_COUNT = BLOCK_SHAPES.length;
+
+NO_PIECE = {};
+NO_PIECE.Draw = function () {}
+
+TETRIS_LOGO = [
+        "  111 222 333 44  5  66  ",
+        "   1  2    3  4 4 5 6    ",
+        "   1  22   3  44  5  6   ",
+        "   1  2    3  4 4 5   6  ",
+        "   1  222  3  4 4 5 66   "
+    ];
+
+DrawTetrisLogo = function (ctx, x, y, a)
+{
+    for (var i = 0, rows = TETRIS_LOGO.length; i != rows; ++i, y += TETRIS_BLOCK_SIZE)
+    {
+        var row = TETRIS_LOGO[i];
+        for (var j = 0, x2 = x, len = row.length; j != len; ++j, x2 += TETRIS_BLOCK_SIZE)
+        {
+            if (row[j] != ' ') DrawBlock(ctx, x2, y, BLOCK_COLOURS[row[j]], a);
+        }
+    }
+}
+

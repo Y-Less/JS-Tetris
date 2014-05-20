@@ -1,0 +1,66 @@
+#pragma once
+
+#include "Base.ys"
+
+StateMachine = function (_initial)
+{
+    var _states = [];
+    var _cur = "";
+    //var _that = this;
+    
+    function DoTransition(to)
+    {
+        if (_states[to] && _cur)
+        {
+            _states[_cur].Exit(to);
+            _states[to].Entry(_cur);
+            _cur = to;
+        }
+    }
+    
+    this.Add = function (name, state)
+    {
+        // Validate that the state is valid, and that it doesn't already
+        // exist.
+        if (!_states[name])
+        {
+            _states[name] = state;
+            state.Transition = function (to) { if (_cur === name) DoTransition(to); };
+        }
+    };
+    
+    this.Start = function ()
+    {
+        if (_cur == "" && _states[_initial])
+        {
+            _states[_initial].Entry("");
+            _cur = _initial;
+            _states[_cur].Update(0);
+        }
+    };
+    
+    this.End = function ()
+    {
+        if (_cur)
+        {
+            _states[_cur].Exit("");
+            _cur = "";
+        }
+    };
+    
+    this.Transition = DoTransition;
+    
+    this.Update = function (time)
+    {
+        if (_cur)
+        {
+            _states[_cur].Update(time);
+        }
+    };
+    
+    this.GetState = function ()
+    {
+        return _cur;
+    };
+}
+

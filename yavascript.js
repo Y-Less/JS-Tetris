@@ -132,7 +132,7 @@ window.onload = function ()
 		// http://www.perlmonks.org/?node=How%20do%20I%20use%20a%20regular%20expression%20to%20strip%20C%20style%20comments%20from%20a%20file%3F
 		code = code.replace(/\/\*[^*]*\*+([^\/*][^*]*\*+)*\/|([^\/"']*("[^"\\]*(\\[\d\D][^"\\]*)*"[^\/"']*|'[^'\\]*(\\[\d\D][^'\\]*)*'[^\/"']*|\/+[^*\/][^\/"']*)*)/g, function ($0, $1, $2)
 			{
-				return ' ' + $2 ? $2 : '';
+				return ' ' + ($2 ? $2 : '');
 			});
 		// This removes line comments
 		code = code.replace(/\/\/(.*)|\/\*[^*]*\*+([^\/*][^*]*\*+)*\/|"(\\.|[^"\\])*"|'(\\.|[^'\\])*'|[^\/"']+/g, function ($0, $1)
@@ -159,7 +159,7 @@ window.onload = function ()
 			else doneIncludes.push(path);
 		}
 		path = path.replace(/(.*)\/.*/, '$1');
-		if (path.length != 0) //indexOf('/') == -1) // && path.indexOf('\\') == -1)
+		if (path.length != 0)
 		{
 			// A path - append a slash
 			path += '/';

@@ -1,0 +1,281 @@
+#pragma once
+
+#include "../Data/Game.ys"
+
+(function ()
+{
+    function CreateView()
+    {
+        var _view = new Viewport();
+        
+        _view.Attach = function ()
+        {
+            Tetris.Window.SetSize(25, 24);
+            Tetris.Window.Viewport = _view;
+        };
+        
+        var _gx = TETRIS_BLOCK_SIZE * 8;
+        var _gy = TETRIS_BLOCK_SIZE * 2;
+        
+        _view.Render = function (ctx, time, bounds)
+        {
+            var data = this.Data;
+            
+            ctx.fillStyle = 'white';
+            var w = ctx.width;
+            var h = ctx.height;
+            ctx.fillRect(bounds.l, bounds.t, bounds.r - bounds.l, bounds.b - bounds.t);
+            //DrawWindow(ctx, 0, 0, 25, 24, BLOCK_COLOURS[0]);
+            
+            //ctx.fillStyle = 'black';
+            //ctx.rect(TETRIS_BLOCK_SIZE * 3.5, TETRIS_BLOCK_SIZE * 2, TETRIS_BLOCK_SIZE * 9, TETRIS_BLOCK_SIZE * 15);
+            
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = TETRIS_BLOCK_SIZE / 2;
+            ctx.strokeRect(TETRIS_BLOCK_SIZE * 2.5, TETRIS_BLOCK_SIZE * 1.75, TETRIS_BLOCK_SIZE * 3.5, TETRIS_BLOCK_SIZE * 5.5);
+            ctx.strokeRect(TETRIS_BLOCK_SIZE * 7.75, TETRIS_BLOCK_SIZE * 1.75, TETRIS_BLOCK_SIZE * 9.5, TETRIS_BLOCK_SIZE * 20.5);
+            ctx.strokeRect(TETRIS_BLOCK_SIZE * 19.0, TETRIS_BLOCK_SIZE * 1.75, TETRIS_BLOCK_SIZE * 3.5, TETRIS_BLOCK_SIZE * 20.5);
+            ctx.strokeRect(TETRIS_BLOCK_SIZE * 19.0, TETRIS_BLOCK_SIZE * 1.75, TETRIS_BLOCK_SIZE * 3.5, TETRIS_BLOCK_SIZE * 5.25);
+            ctx.lineWidth = 1;
+            
+            var y = _gy;
+            for (var i in data.Grid)
+            {
+                var x = _gx;
+                // DrawBlock(ctx, x, y, {);
+                for (var j in data.Grid[i])
+                {
+                    if (data.Grid[i][j] >= 0)
+                    {
+                        DrawBlock(ctx, x, y, BLOCK_COLOURS[data.Grid[i][j]]);
+                    }
+                    x += TETRIS_BLOCK_SIZE;
+                }
+                y += TETRIS_BLOCK_SIZE;
+            }
+            
+            for (var i in data.Stores)
+            {
+                data.Stores[i].Draw(ctx, TETRIS_BLOCK_SIZE * 18.75, (i * 5 + 2.5) * TETRIS_BLOCK_SIZE);
+            }
+            data.Saved.Draw(ctx, TETRIS_BLOCK_SIZE * 2.25, 2.5 * TETRIS_BLOCK_SIZE);
+            data.Piece.Draw(ctx, TETRIS_BLOCK_SIZE * data.Piece.X + _gx, TETRIS_BLOCK_SIZE * data.Piece.Y + _gy);
+            
+            return true;
+        };
+        
+        _view.On = function (what, event)
+        {
+            switch (what)
+            {
+                case 'keydown':
+                    this.Fire(["Down", event.keyCode]);
+                    break;
+                case 'keyup':
+                    this.Fire(["Up", event.keyCode]);
+                    break;
+            }
+        };
+        
+        _view.RegisterAction('keyup');
+        _view.RegisterAction('keydown');
+        //_view.Action['keyup'] = 'Drop';
+        //_view.Action['keydown'] = 'Move';
+        
+        return _view;
+    }
+    
+    Tetris.Add(TETRIS_STATE_GAME, new (function ()
+        {
+            var _view = CreateView();
+            _view.Listeners.Add(this);
+            
+            var _paused;
+            var _data;
+            
+            var _boxit = false;
+            
+            var _left    = 0;
+            var _right   = 0;
+            var _rotateL = 0;
+            var _rotateR = 0;
+            
+            var _dropSpeed;
+            var _step;
+            
+            this.Fire = function (what)
+            {
+                switch (what[0])
+                {
+                    case 'Down':
+                        switch (what[1])
+                        {
+                            case KEY_SPACE:
+                                _boxit = true;;
+                                break;
+                            case KEY_LEFT:
+                                ++_left;
+                                break;
+                            case KEY_RIGHT:
+                                ++_right;
+                                break;
+                            case KEY_DOWN:
+                                _dropSpeed = _data.Speed / 10;
+                                break;
+                            case KEY_ESC:
+                                this.Transition(TETRIS_STATE_MENU);
+                                break;
+                            case KEY_PAUSE:
+                                _paused = !_paused;
+                                break;
+                            case KEY_UP:
+                                ++_rotateR;
+                                break;
+                        }
+                        break;
+                    case 'Up':
+                        switch (what[1])
+                        {
+                            case KEY_DOWN:
+                                _dropSpeed = _data.Speed;
+                                break;
+                        }
+                        break;
+                }
+            }
+            
+            this.Entry = function (from)
+            {
+                _data = new TetrisGameData();
+                _paused = false;
+                _dropSpeed = _data.Speed;
+                _step = 0;
+                _view.Data = _data;
+                _view.Attach();
+            };
+            
+            this.Exit = function (to)
+            {
+            };
+            
+            function MovePiece(_piece)
+            {
+                while (_left)
+                {
+                    _piece.Move(-1, 0);
+                    if (_data.Collide(_piece))
+                    {
+                        _piece.Move(1, 0);
+                        _left = 0;
+                    }
+                    else --_left;
+                }
+                while (_right)
+                {
+                    _piece.Move(1, 0);
+                    if (_data.Collide(_piece))
+                    {
+                        _piece.Move(-1, 0);
+                        _right = 0;
+                    }
+                    else --_right;
+                }
+                while (_rotateL)
+                {
+                    _piece.Rotate(1);
+                    if (_data.Collide(_piece))
+                    {
+                        _piece.Rotate(-1);
+                        _rotateL = 0;
+                    }
+                    else --_rotateL;
+                }
+                while (_rotateR)
+                {
+                    _piece.Rotate(-1);
+                    if (_data.Collide(_piece))
+                    {
+                        _piece.Rotate(1);
+                        _rotateR = 0;
+                    }
+                    else --_rotateR;
+                }
+            }
+            
+            this.Update = function (time)
+            {
+                console.log('hi');
+                if (_paused)
+                {
+                    _left    = 0;
+                    _right   = 0;
+                    _rotateL = 0;
+                    _rotateR = 0;
+                    _boxit = false;
+                    _dropSpeed = _speed;
+                    return;
+                }
+                var piece = _data.Piece;
+                MovePiece(piece);
+                // Try move left or right.
+                if (_boxit)
+                {
+                    if (!piece.Boxed)
+                    {
+                        // TODO: Swap this piece with the one in the store.
+                        if ((_data.Piece = _data.Saved) == NO_PIECE)
+                        {
+                            _data.NewPiece();
+                            _data.Piece = _data.Stores.shift();
+                        }
+                        _data.Piece.X = 2;
+                        _data.Piece.Y = -4;
+                        // piece.X = 0;
+                        // piece.Y = 0;
+                        piece.Reset();
+                        piece.Boxed = true;
+                        _data.Saved = piece;
+                    }
+                    _boxit = false;
+                }
+                // Drop the piece down slightly (if we can).
+                _step += time;
+                if (_step > _dropSpeed)
+                {
+                    piece.Move(0, 1);
+                    if (_data.Collide(piece))
+                    {
+                        piece.Move(0, -1);
+                        // Settled in its final place.  Transfer the parts to the
+                        // static grid.
+                        if (_data.Shuffle())
+                        {
+                            this.Transition(TETRIS_STATE_MENU);
+                            if (TetrisScores.IsHigh(_data.Destroyed))
+                            {
+                                TetrisScores.Add(window.prompt('HIGH SCORE: ' + _data.Destroyed, 'Enter your name'), _data.Destroyed);
+                            }
+                            else
+                            {
+                                window.alert('GAME OVER!  Score: ' + _data.Destroyed);
+                            }
+                        }
+                        else
+                        {
+                            var u = _data.DestroyRows().length;
+                            while (u--)
+                            {
+                                if (++_data.Destroyed % 10 == 0)
+                                {
+                                    _dropSpeed = (_data.Speed *= 0.75);
+                                }
+                            }
+                        }
+                    }
+                    // End this loop.
+                    _step %= _dropSpeed;
+                }
+            }
+        })());
+})();
+

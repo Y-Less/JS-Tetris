@@ -1,0 +1,140 @@
+#pragma once
+
+#include "../../Widgets/Widget.ys"
+#include "../../Widgets/TextDraw.ys"
+#include "../../Widgets/KeyPress.ys"
+
+TetrisButton = function (y, w, h, text)
+{
+    this.super(0, y);
+    this.Align = 'center';
+    this.Width = w;
+    this.Height = h;
+    
+    this.Render = function (ctx, time)
+    {
+        ctx.fillStyle = '#BBBBBB';
+        ctx.fillRect(0, 0, this.TrueWidth, this.TrueHeight);
+        
+        ctx.fillStyle = '#800000';
+        //ctx.fillStyle = 'blue';
+        ctx.font = 'bold 22pt Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, this.TrueWidth / 2, this.TrueHeight / 2, w);
+    };
+    
+    this.On = function (what)
+    {
+        if (what == 'click')
+        {
+            this.Fire(this.Action['click']);
+        }
+    };
+    
+    this.RegisterAction('click');
+    
+    return this;
+};
+
+Inherit(TetrisButton, Widget);
+
+(function ()
+{
+    function CreateView()
+    {
+        var _height = TETRIS_LOGO.length;
+        var _width = TETRIS_LOGO[0].length;
+        
+        var _view = new Viewport();
+        
+        _view.AddWidget(new (Inherit(function ()
+            {
+                this.super(0, TETRIS_BLOCK_SIZE);
+                
+                this.On = function () {};
+                this.Height = _height * TETRIS_BLOCK_SIZE;
+                this.Width = _width * TETRIS_BLOCK_SIZE;
+                this.Align = 'center';
+                
+                this.Render = function (ctx, time)
+                {
+                    DrawTetrisLogo(ctx, 0, 0);
+                    return true;
+                };
+            }, Widget))());
+        
+        var tmp;
+        
+        tmp = new TetrisButton(TETRIS_BLOCK_SIZE * 7 , TETRIS_BLOCK_SIZE * 7, TETRIS_BLOCK_SIZE * 2, 'New Game');
+        tmp.Action['click'] = 'NewGame';
+        _view.AddWidget(tmp);
+        tmp = new TetrisButton(TETRIS_BLOCK_SIZE * 10, TETRIS_BLOCK_SIZE * 7, TETRIS_BLOCK_SIZE * 2, 'High Scores');
+        tmp.Action['click'] = 'HighScore';
+        _view.AddWidget(tmp);
+        tmp = new TetrisButton(TETRIS_BLOCK_SIZE * 13, TETRIS_BLOCK_SIZE * 7, TETRIS_BLOCK_SIZE * 2, 'Options');
+        tmp.Action['click'] = 'Options';
+        _view.AddWidget(tmp);
+        tmp = new TetrisButton(TETRIS_BLOCK_SIZE * 16, TETRIS_BLOCK_SIZE * 7, TETRIS_BLOCK_SIZE * 2, 'Credits');
+        tmp.Action['click'] = 'Credits';
+        _view.AddWidget(tmp);
+        tmp = new TetrisButton(TETRIS_BLOCK_SIZE * 19, TETRIS_BLOCK_SIZE * 7, TETRIS_BLOCK_SIZE * 2, 'Exit');
+        tmp.Action['click'] = 'Exit';
+        _view.AddWidget(tmp);
+        
+        _view.Attach = function ()
+        {
+            Tetris.Window.SetSize(_width + 2, 24);
+            Tetris.Window.Viewport = _view;
+        };
+        
+        return _view;
+    }
+    
+    
+    
+    
+    Tetris.Add(TETRIS_STATE_MENU, new (function ()
+        {
+            var _view = CreateView();
+           _view.Listeners.Add(this);
+            
+            this.Fire = function (event)
+            {
+                switch (event)
+                {
+                    case 'NewGame':
+                        this.Transition(TETRIS_STATE_GAME);
+                        break;
+                    case 'HighScore':
+                        this.Transition(TETRIS_STATE_SCORES);
+                        //alert(window.prompt('Text', 'here'));
+                        break;
+                    case 'Options':
+                        alert('Options');
+                        break;
+                    case 'Credits':
+                        alert('Credits');
+                        break;
+                    case 'Exit':
+                        Tetris.Close();
+                        break;
+                }
+            };
+            
+            this.Entry = function (from)
+            {
+                _view.Attach();
+            };
+            
+            this.Exit = function (to)
+            {
+            };
+            
+            this.Update = function (time)
+            {
+            };
+        })());
+})();
+
+

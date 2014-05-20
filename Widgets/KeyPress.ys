@@ -1,0 +1,40 @@
+#pragma once
+
+#include "Widget.ys"
+
+KeyPress = function ()
+{
+    this.super(0, 0);
+    this.Width = '100%';
+    this.Height = '100%';
+    
+    this.Render = function (ctx, time)
+    {
+        // ctx.fillStyle = 'red';
+        // ctx.fillRect(0, 0, ctx.width, ctx.height);
+    };
+    this.On = function (what, x, y, event)
+    {
+        //alert('woo');
+        if (what == 'keypress' || what == 'click')
+        {
+            //f(event);
+            //this.Trigger(this, this.Action['key'], event);
+            if (this.Action['key'] instanceof Function)
+            {
+                this.Action['key'](event);
+            }
+        }
+    };
+    
+    var _that = this;
+    
+    document.addEventListener('keypress', function (event) { _that.On(event.type, 0, 0, event); }, false);
+    
+    this.RegisterAction('click');
+    
+    return this;
+};
+
+Inherit(KeyPress, Widget);
+

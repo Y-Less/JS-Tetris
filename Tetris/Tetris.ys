@@ -1,0 +1,77 @@
+#pragma once
+
+#define TETRIS_BLOCK_SIZE 25
+#define TETRIS_GRID_ROWS 20
+#define TETRIS_GRID_COLS 9
+
+TETRIS_STATE_SPLASH   = 'SplashScreen';
+TETRIS_STATE_CONTINUE = 'ContinueScreen';
+TETRIS_STATE_MENU     = 'Menu';
+TETRIS_STATE_CREDITS  = 'Credits';
+TETRIS_STATE_OPTIONS  = 'Options';
+TETRIS_STATE_SCORES   = 'HighScores';
+TETRIS_STATE_NEW      = 'NewGame';
+TETRIS_STATE_GAME     = 'Game';
+TETRIS_STATE_PAUSE    = 'Pause';
+TETRIS_STATE_QUIT     = 'Quit';
+TETRIS_STATE_OVER     = 'GameOver';
+TETRIS_STATE_HIGH     = 'HighScore';
+TETRIS_STATE_INDUCTED = 'Inducted';
+
+#include "Chrome.ys"
+#include "Drawing.ys"
+#include "../Utils/States.ys"
+#include "../Utils/App.ys"
+
+TetrisScores = new (function ()
+    {
+        function OneScore(_name, _score)
+        {
+            this.Order = function () { return -_score; }
+            
+            this.Draw = function (n, ctx)
+            {
+                if (n < 10)
+                {
+                    ctx.font = '15pt Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(_name + ': ' + _score, ctx.width / 2, (n + 5) * TETRIS_BLOCK_SIZE);
+                }
+                return n + 1;
+            }
+        };
+        
+        this.Scores = new Container(OneScore, true);
+        
+        this.IsHigh = function (score)
+        {
+            var c = this.Scores.GetChildren();
+            return c.length < 10 || c[9].Order() > -score;
+        };
+        
+        this.Add = function (name, score)
+        {
+            this.Scores.Add(new OneScore(name, score));
+        }
+    })();
+
+
+Tetris = new App(new TetrisWindow(), TETRIS_STATE_SPLASH);
+
+#define KEY_LEFT   37
+#define KEY_UP     38
+#define KEY_RIGHT  39
+#define KEY_DOWN   40
+#define KEY_SPACE  32
+#define KEY_ESC    27
+#define KEY_PAUSE  19
+
+
+
+#include "States/Splash.ys"
+#include "States/Menu.ys"
+#include "States/Game.ys"
+#include "States/High.ys"
+
+

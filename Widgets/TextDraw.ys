@@ -1,0 +1,32 @@
+#include "Widget.ys"
+
+TextDraw = function (_text, y, align)
+{
+    this.super(0, y || 0);
+    this.Align = align || 'left';
+    
+    this.On = function () {};
+    
+    this.Render = function (ctx, time)
+    {
+        // console.log('text');
+        ctx.font = '15pt Arial';
+        ctx.textAlign = this.Align;
+        ctx.textBaseline = 'top';
+        switch (this.Align)
+        {
+            case 'left':
+                ctx.fillText(_text, 0, 0);
+                break;
+            case 'center':
+                ctx.fillText(_text, ctx.width / 2, 0);
+                break;
+            case 'right':
+                ctx.fillText(_text, ctx.width, 0);
+                break;
+        }
+    };
+};
+
+Inherit(TextDraw, Widget);
+

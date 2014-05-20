@@ -1,0 +1,46 @@
+#pragma once
+
+#include "../Utils/States.ys"
+
+App = function (window, initial)
+    {
+        this.Window = window;
+        
+        var _open = false;
+        
+        var _gameState = new StateMachine(initial);
+        
+        this.Open = function ()
+        {
+            if (!_open)
+            {
+                Updates.Add(_gameState);
+                _gameState.Start();
+                this.Window.Show();
+                _open = true;
+            }
+        };
+        
+        this.Close = function ()
+        {
+            if (_open)
+            {
+                Updates.Remove(_gameState);
+                this.Window.X = 0;
+                this.Window.Y = 100;
+                this.Window.Width = 1;
+                this.Window.Height = 1;
+                this.Window.Align = 'center';
+                this.Window.Hide();
+                this.Window.Maximised = false;
+                _gameState.End();
+                _open = false;
+            }
+        };
+        
+        this.Add = function (n, s)
+        {
+            return _gameState.Add(n, s);
+        };
+    }
+

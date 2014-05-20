@@ -1,0 +1,125 @@
+#pragma once
+
+#include "../Utils/Base.ys"
+#include "../Utils/Container.ys"
+#include "View.ys"
+#include "Widget.ys"
+
+Window = function ()
+{
+    "use strict";
+    
+    this.super(0, 100);
+    
+    this.Align = 'center';
+    
+    var _chrome = new Container(Widget, true);
+    
+    var _viewport = new Viewport();
+    _viewport.SetWindow(this);
+    
+    Object.defineProperty(this, 'Viewport', {
+            configurable: false,
+            enumerable: true,
+            set: function (v)
+            {
+                if (v instanceof Viewport)
+                {
+                    if (v == _viewport) return;
+                    this.Dirty();
+                    _viewport.SetWindow();
+                    v.SetWindow(this);
+                    return (_viewport = v);
+                }
+            },
+            get: function () { return _viewport; }
+        });
+    
+    /*
+        x  - Theoretical "x" position of the parent.
+        y  - Theoretical "y" position of the parent.
+        bl - Left bounds of the drawing area.
+        bt - Top bounds of the drawing area.
+        br - Right bounds of the drawing area.
+        bb - Bottom bounds of the drawing area.
+    */
+    var _bounds = { l: 0, t: 0, r: 0, b: 0 };
+    this.Render = function (ctx, time, force)
+    {
+        _bounds = this.GetViewport(this.TrueWidth, this.TrueHeight, time);
+        force = this.RenderChrome(ctx, time, force) || force;
+        force = _chrome.FoldL('_Render', force, [ctx, 0, 0, this.TrueWidth, this.TrueHeight, 0, 0, this.TrueWidth, this.TrueHeight, time]) || force;
+        return _viewport.Render(ctx, time, _bounds, force);
+        // Render all the children.
+    };
+    
+    this.On = function (what, x, y, event)
+    {
+        if (!event)
+        {
+            _viewport.On(what, x);
+        }
+        else
+        {
+            if (x >= _bounds.l && x < _bounds.r && y >= _bounds.t && y < _bounds.b)
+            {
+                _viewport.On(what, x, y, event);
+            }
+            else if (!_chrome.FoldR('_On', [what, x, y, 0, 0, event], false))
+            {
+                this.OnChrome(what, x, y, event);
+            }
+        }
+        return false;
+    };
+    
+    this.AddChrome = function (child)
+    {
+        _chrome.Add(child);
+    };
+    
+    this.RemoveChrome = function (child)
+    {
+        _chrome.Remove(child);
+    };
+    
+    this.RegisterAction('mousedown');
+    this.RegisterAction('dblclick');
+    //this.RegisterAction('mouseup');
+    
+    this.Maximised = false;
+    this.OldWidth = 0;
+    this.OldHeight = 0;
+    
+    return this;
+}
+
+Inherit(Window, View);
+Interface(Window, ['GetViewport', 'RenderChrome']);
+
+Window.prototype.OnChrome = function (what, x, y, event)
+{
+    switch (what)
+    {
+        case 'mousedown':
+            Drag.Start(this, event);
+            break;
+        case 'dblclick':
+            if (this.Maximised)
+            {
+                this.Width = this.OldWidth;
+                this.Height = this.OldHeight;
+            }
+            else
+            {
+                this.OldWidth = this.TrueWidth;
+                this.OldHeight = this.TrueHeight;
+                this.Width = '100%';
+                this.Height = '100%';
+            }
+            this.Moved();
+            this.Maximised = !this.Maximised;
+            break;
+    }
+};
+

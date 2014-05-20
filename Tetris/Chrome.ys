@@ -1,0 +1,62 @@
+#pragma once
+
+#include "../Widgets/Window.ys"
+#include "Drawing.ys"
+
+TetrisWindow = function (w, h)
+{
+    this.super();
+    
+    this.BlockWidth = 0;
+    this.BlockHeight = 0;
+    this.Align = 'center';
+    
+    this.RenderChrome = function (ctx, time)
+    {
+        var a = 1.0;
+        var c = BLOCK_COLOURS[0];
+        ctx.fillStyle = 'rgba(255, 255, 255, ' + a + ')';
+        var w = this.BlockWidth;
+        var h = this.BlockHeight;
+        //console.log('w: ' + w + ', h: ' + h);
+        ctx.fillRect(0, 0, w, h);
+        h -= TETRIS_BLOCK_SIZE;
+        for (var i = 0; i < w; i += TETRIS_BLOCK_SIZE)
+        {
+            DrawBlock(ctx, i, 0, c, a);
+            DrawBlock(ctx, i, h, c, a);
+        }
+        w -= TETRIS_BLOCK_SIZE;
+        for (var i = TETRIS_BLOCK_SIZE; i < h; i += TETRIS_BLOCK_SIZE)
+        {
+            DrawBlock(ctx, 0, i, c, a);
+            DrawBlock(ctx, w, i, c, a);
+        }
+    };
+    
+    this.GetViewport = function ()
+    {
+        return {l: TETRIS_BLOCK_SIZE, t: TETRIS_BLOCK_SIZE, r: this.BlockWidth - TETRIS_BLOCK_SIZE, b: this.BlockHeight - TETRIS_BLOCK_SIZE};
+    };
+    
+    this.OnResize = function (w, h)
+    {
+        this.BlockWidth = Math.floor(w / TETRIS_BLOCK_SIZE) * TETRIS_BLOCK_SIZE;
+        this.BlockHeight = Math.floor(h / TETRIS_BLOCK_SIZE) * TETRIS_BLOCK_SIZE;
+    };
+    
+    this.SetSize = function (w, h)
+    {
+        if (this.Width == '100%') this.OldWidth = w * TETRIS_BLOCK_SIZE;
+        else this.Width = w * TETRIS_BLOCK_SIZE;
+        if (this.Height == '100%') this.OldHeight = h * TETRIS_BLOCK_SIZE;
+        else this.Height = h * TETRIS_BLOCK_SIZE;
+    };
+    
+    this.SetSize(w, h);
+    
+    return this;
+};
+
+Inherit(TetrisWindow, Window);
+

@@ -1,0 +1,80 @@
+#pragma once
+
+#include "../../Widgets/Widget.ys"
+#include "../../Widgets/TextDraw.ys"
+#include "../../Widgets/KeyPress.ys"
+
+
+
+
+
+
+
+
+
+
+
+
+(function ()
+{
+    function CreateView()
+    {
+        var _view = new Viewport();
+        var _height = TETRIS_LOGO.length;
+        var _width = TETRIS_LOGO[0].length;
+        
+        _view.Render = function (ctx, time, bounds)
+        {
+            TetrisScores.Scores.FoldL('Draw', 0, [ctx]);
+            return true;
+        }
+        
+        _view.RegisterAction('click');
+        _view.RegisterAction('keypress');
+        _view.Action['keypress'] = 'Back';
+        _view.Action['click'] = 'Back';
+        
+        _view.Attach = function ()
+        {
+            // console.log('one');
+            Tetris.Window.SetSize(24, 26);
+            Tetris.Window.Viewport = _view;
+        };
+        
+        return _view;
+    };
+    
+    
+    
+    
+    Tetris.Add(TETRIS_STATE_SCORES, new (function ()
+        {
+            var _view = CreateView();
+            
+            _view.Listeners.Add(this);
+            
+            this.Fire = function (what)
+            {
+                switch (what)
+                {
+                    case 'Back':
+                        this.Transition(TETRIS_STATE_MENU);
+                }
+            }
+            
+            this.Entry = function (from)
+            {
+                _view.Attach();
+            };
+            
+            this.Exit = function (to)
+            {
+            };
+            
+            this.Update = function (time)
+            {
+            };
+        })());
+})();
+
+

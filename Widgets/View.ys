@@ -1,0 +1,324 @@
+#pragma once
+
+#include "../Utils/Base.ys"
+#include "../Utils/Placeable.ys"
+#include "../Utils/Container.ys"
+
+View = function (x, y)
+{
+    "use strict";
+    
+    this.super(x, y);
+    
+    var _children = new Container(View, false);
+    
+    var _active = true;
+    
+    this.IsActive = function ()
+    {
+        return _active;
+    };
+    
+    this.Activate = function ()
+    {
+        _active = true;
+    };
+    
+    this.Deactivate = function ()
+    {
+        _active = false;
+    };
+    
+    // Double-buffering.
+    var _domContainer = document.createElement('div');
+    _domContainer.className = 'view_container';
+    
+    var _bcanvas = document.createElement('canvas');
+    var _bctx = _bcanvas.getContext('2d');
+    _bcanvas.style.display = 'none';
+    
+    var _fcanvas = document.createElement('canvas');
+    var _fctx = _fcanvas.getContext('2d');
+    _fcanvas.style.display = 'block';
+    
+    var _domInteract = document.createElement('div');
+    
+    // The back context passed about.
+    var _ctx = _bctx;
+    var _ffront = true;
+    
+    _domContainer.appendChild(_bcanvas);
+    _domContainer.appendChild(_fcanvas);
+    _domContainer.appendChild(_domInteract);
+    
+    // Things to do when this is utilised.
+    var _domHandlers = {};
+    this.TrueWidth = 0;
+    this.TrueHeight = 0;
+    
+    var that = this;
+    var _tx = 0;
+    
+    function ProcessDOM(event)
+    {
+        if (that.IsShown() && that.IsActive())
+        {
+            var x = event.offsetX || event.pageX - _tx;
+            var y = event.offsetY || event.pageY - that.Y;
+            that.On(event.type, x, y, event);
+        }
+        return false;
+    }
+    
+    function ProcessGlobal(event)
+    {
+        if (that.IsShown() && that.IsActive())
+        {
+            that.On(event.type, event);
+        }
+        return false;
+    }
+    
+    this.RegisterAction = function (on)
+    {
+        if (!_domHandlers[on])
+        {
+            _domHandlers[on] = true;
+        }
+    };
+    
+    var _Show = this.Show;
+    this.Show = function ()
+    {
+        // Add BOTH buffers to the page, so that they can be swapped.
+        document.body.appendChild(_domContainer);
+        // Add the handlers that are pending.
+        if (!document.addEventListener)
+        {
+            document.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
+            _domInteract.addEventListener = function (a, b, c) { return this.attachEvent('on' + a, b); };
+        }
+        this.RegisterAction = function (on)
+        {
+            if (!_domHandlers[on])
+            {
+                //console.log('adding ' + on);
+                switch (on)
+                {
+                    case 'keypress':
+                    case 'mouseup':
+                    case 'keydown':
+                    case 'keyup':
+                        //console.log('document');
+                        document.addEventListener(on, ProcessGlobal, false);
+                        break;
+                    default:
+                        _domInteract.addEventListener(on, ProcessDOM, false);
+                }
+                _domHandlers[on] = true;
+            }
+        };
+        for (var on in _domHandlers)
+        {
+            //console.log('adding ' + on);
+            switch (on)
+            {
+                case 'keypress':
+                case 'mouseup':
+                case 'keydown':
+                case 'keyup':
+                    //console.log('document');
+                    document.addEventListener(on, ProcessGlobal, false);
+                    break;
+                default:
+                    _domInteract.addEventListener(on, ProcessDOM, false);
+            }
+            //_domInteract.addEventListener(on, ProcessDOM, false);
+        }
+        // Show the view within the system.
+        this.Show = function ()
+        {
+            _Show.call(this);
+            _domContainer.style.display = 'block';
+        };
+        this.Show();
+    };
+    
+    var _Hide = this.Hide;
+    this.Hide = function ()
+    {
+        _Hide.call(this);
+        _domContainer.style.display = 'none';
+    };
+    
+    var _lw = 0;
+    var _lh = 0;
+    
+    this._Render = function (time)
+    {
+        if (!this.IsShown()) return;
+        //var dirty = this.IsDirty();
+        var w = this.Width;
+        var h = this.Height;
+        var x = this.X;
+        var y = this.Y;
+        //console.log('' + this.HasMoved() + ', ' + h + ', ' + w);
+        if (h == '100%')
+        {
+            h = window.innerHeight; y = 0;
+        }
+        if (w == '100%')
+        {
+            w = window.innerWidth; x = 0;
+        }
+        if (this.HasMoved())
+        {
+            _domContainer.style.top  = y;
+            switch (this.AlignNum())
+            {
+                case 0:
+                    _domContainer.style.left = _tx = x;
+                    break;
+                case 1:
+                    _domContainer.style.left = _tx = (window.innerWidth - w) / 2 + x;
+                    break;
+                case 2:
+                    _domContainer.style.left = _tx = window.innerWidth - w - x;
+                    break;
+            }
+            // Do the actual movement.
+        }
+        var dirty = this.IsDirty();
+        if (_lw != w)
+        {
+            dirty = true;
+            _lw = this.TrueWidth = _bctx.width  = _fctx.width  = _domContainer.style.width  = _bcanvas.width  = _fcanvas.width  = w;
+        }
+        if (_lh != h)
+        {
+            dirty = true;
+            _lh = this.TrueHeight = _bctx.height = _fctx.height = _domContainer.style.height = _bcanvas.height = _fcanvas.height = h;
+        }
+        if (dirty && this['OnResize'] instanceof Function) this.OnResize(w, h);
+        if (this.Render(_ctx, time, dirty))
+        {
+            // Flip.
+            if (_ffront)
+            {
+                _bcanvas.style.display = 'block';
+                _fcanvas.style.display = 'none';
+                _ctx = _fctx;
+                _ffront = false;
+            }
+            else
+            {
+                _fcanvas.style.display = 'block';
+                _bcanvas.style.display = 'none';
+                _ctx = _bctx;
+                _ffront = true;
+            }
+        }
+        _children.Map('_Render', [time]);
+    };
+    
+    this.AddChild = function (child)
+    {
+        _children.Add(child);
+    };
+    
+    this.RemoveChild = function (child)
+    {
+        _children.Remove(child);
+    };
+}
+
+Inherit(View, Placeable);
+Interface(View, ['Render', 'GetViewport', 'On']);
+
+//this.prototype.On = function () {};
+
+
+Viewport = function ()
+{
+    var _widgets = new Container(Widget, true);
+    var _bounds = { l: 0, t: 0, r: 0, b: 0 };
+    
+    var _window;
+    
+    this.Listeners = new Container();
+    
+    this.Action = [];
+    
+    this.Render = function (ctx, time, bounds, force)
+    {
+        _bounds = bounds;
+        return _widgets.FoldL('_Render', force, [ctx, _bounds.l, _bounds.t, _bounds.r - _bounds.l, _bounds.b - _bounds.t, _bounds.l, _bounds.t, _bounds.r, _bounds.b, time]) || force;
+    };
+    
+    // DRY!
+    var _pending = [];
+    
+    this.On = function (what, x, y, event)
+    {
+        if (!event)
+        {
+            // this.On(what, event);
+            this.Fire(this.Action[what]);
+        }
+        else
+        {
+            if (x >= _bounds.l && x < _bounds.r && y >= _bounds.t && y < _bounds.b)
+            {
+                if (!_widgets.FoldR('_On', [what, x, y, _bounds.l, _bounds.t, event], false))
+                {
+                    this.Fire(this.Action[what]);
+                }
+            }
+        }
+        return false;
+    };
+    
+    this.AddWidget = function (child)
+    {
+        _widgets.Add(child);
+        child.SetParent(this);
+    };
+    
+    this.RemoveWidget = function (child)
+    {
+        _widgets.Remove(child);
+        child.SetParent(this);
+    };
+    
+    this.SetWindow = function (window)
+    {
+        if ((_window = window))
+        {
+            for (var p in _pending)
+            {
+                _window.RegisterAction(_pending[p]);
+            }
+        }
+    };
+    
+    this.RegisterAction = function (on)
+    {
+        if (_window)
+        {
+            _window.RegisterAction(on);
+        }
+        _pending.push(on);
+    };
+    
+    this.Fire = function (what)
+    {
+        this.Listeners.Map('Fire', [what]);
+    };
+}
+
+Interface(Viewport, ['Attach']);
+
+Viewport.prototype.On = function (what, event)
+{
+};
+
